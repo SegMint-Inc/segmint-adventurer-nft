@@ -12,6 +12,8 @@ import { Events } from "./utils/Events.sol";
 import { Users } from "./utils/Users.sol";
 
 abstract contract BaseTest is Base, Assertions, Errors, Events {
+    using stdStorage for StdStorage;
+
     Users public users;
 
     function setUp() public virtual {
@@ -39,6 +41,9 @@ abstract contract BaseTest is Base, Assertions, Errors, Events {
         accessRegistry = abi.decode(vm.parseJson({ json: jsonFile, key: ".address" }), (IAccessRegistry));
         bytes memory registryCode = abi.decode(vm.parseJson({ json: jsonFile, key: ".code" }), (bytes));
         vm.etch({ target: address(accessRegistry), newRuntimeBytecode: registryCode });
+
+        /// Grant access to Alice and Bob.
+        _grantAccess();
     }
 
     function _setUpAfter() internal {
@@ -48,6 +53,9 @@ abstract contract BaseTest is Base, Assertions, Errors, Events {
         vm.label({ account: address(uint160(uint256(implementation))), newLabel: "Adventurer Implementation" });
     }
 
+    /**
+     * Helper function used to create users for testing purposes.
+     */
     function _createUsers() internal {
         users.admin = vm.createWallet({ walletLabel: "test.admin" });
         vm.label({ account: users.admin.addr, newLabel: "Admin" });
@@ -65,8 +73,21 @@ abstract contract BaseTest is Base, Assertions, Errors, Events {
         vm.label({ account: users.eve.addr, newLabel: "Eve (Malicious User)" });
     }
 
+    /**
+     * Helper function used to set access types for Alice and Bob.
+     */
     function _grantAccess() internal {
+        stdstore
+            .target(address(accessRegistry))
+            .sig(IAccessRegistry.accessType.selector)
+            .with_key(users.alice.addr)
+            .checked_write(uint256(IAccessRegistry.AccessType.RESTRICTED));
 
+        stdstore
+            .target(address(accessRegistry))
+            .sig(IAccessRegistry.accessType.selector)
+            .with_key(users.bob.addr)
+            .checked_write(uint256(IAccessRegistry.AccessType.UNRESTRICTED));
     }
 
 }
