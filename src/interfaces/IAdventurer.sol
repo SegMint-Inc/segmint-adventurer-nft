@@ -5,6 +5,10 @@ import { IAccessRegistry } from "./IAccessRegistry.sol";
 import { Characters } from "../types/DataTypes.sol";
 
 interface IAdventurer {
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           ERRORS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /**
      * Thrown when the zero address is provided as input.
      */
@@ -61,6 +65,15 @@ interface IAdventurer {
     error ZeroLengthArray();
 
     /**
+     * Thrown when the caller does not have a valid access type from the Access Registry.
+     */
+    error InvalidAccessType();
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /**
      * Emitted when an adventurer is claimed.
      * @param account Account that claimed the adventurer.
      * @param profileId SegMint profile identifier.
@@ -105,6 +118,17 @@ interface IAdventurer {
     event CharacterSupplyUpdated(Characters indexed character, uint256 amount);
 
     /**
+     * Emitted when the claim state is updated.
+     * @param oldClaimState Old claim state value.
+     * @param newClaimState New claim state value.
+     */
+    event ClaimStateUpdated(IAdventurer.ClaimState oldClaimState, IAdventurer.ClaimState newClaimState);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         FUNCTIONS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /**
      * Function used to initialize storage of the proxy contract.
      * @param _owner Owner address.
      * @param _admin Admin address.
@@ -121,6 +145,40 @@ interface IAdventurer {
     ) external;
 
     /**
+     * Function used to claim an adventurer.
+     * @param profileId SegMint profile identifier.
+     * @param character Adventurer character type being claimed.
+     * @param signature Signed message digest.
+     */
+    function claimAdventurer(bytes32 profileId, Characters character, bytes calldata signature) external;
+
+    /**
+     * Function used to transform an adventurer into Keydara.
+     * @param tokenId Adventurer token identifier.
+     * @param signature Signed message digest.
+     */
+    function transformAdventurer(uint256 tokenId, bytes calldata signature) external;
+
+    /**
+     * Function used to claim the remaining supply of tokens.
+     * @param character Adventurer character type to claim.     
+     * @param receiver Receiving address of the newly minted adventurers.
+     */
+    function claimAdventurers(Characters character, address receiver) external;
+
+    /**
+     * Function used to add `amount` to the supply of a character.
+     * @param characters Array of adventurer character types.
+     * @param amounts Array of supply amounts to add.
+     */
+    function addCharacterSupply(Characters[] calldata characters, uint256[] calldata amounts) external;
+
+    /**
+     * Function used to emit an ERC4906 event to update the metadata for all existing tokens.
+     */
+    function updateMetadata() external;
+
+    /**
      * Function used to update the signer address.
      * @param newSigner New signer address.
      */
@@ -132,6 +190,26 @@ interface IAdventurer {
      */
     function setAccessRegistry(IAccessRegistry newAccessRegistry) external;
 
+    /**
+     * Function used to set a new base token URI.
+     * @param newBaseTokenURI New base token URI value.
+     */
+    function setBaseTokenURI(string calldata newBaseTokenURI) external;
+
+    /**
+     * Function used to toggle the existing claim state.
+     */
+    function toggleClaimState() external;
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                            ENUMS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /**
+     * Enum that encapsulates the possible claim states.
+     * @custom:param CLOSED - Indicates the claim state is closed.
+     * @custom:param ACTIVE - Indicates the claim state is active.
+     */
     enum ClaimState {
         CLOSED,
         ACTIVE

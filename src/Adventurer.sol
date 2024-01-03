@@ -13,6 +13,9 @@ import { IAdventurer } from "./interfaces/IAdventurer.sol";
 import { IERC4906 } from "./interfaces/IERC4906.sol";
 import { Characters } from "./types/DataTypes.sol";
 
+/**
+ * @title Adventurer
+ */
 contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgradeable, Initializable, UUPSUpgradeable {
     using ECDSA for bytes32;
 
@@ -79,16 +82,16 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     }
 
     /**
-     * Function used to claim an adventurer.
-     * @param profileId SegMint profile identifier.
-     * @param character Adventurer character type being claimed.
-     * @param signature Signed message digest.
+     * @inheritdoc IAdventurer
      */
     function claimAdventurer(
         bytes32 profileId,
         Characters character,
         bytes calldata signature
     ) external checkClaimState(ClaimState.ACTIVE) {
+        IAccessRegistry.AccessType accountAccessType = accessRegistry.accessType({ account: msg.sender });
+        if (accountAccessType == IAccessRegistry.AccessType.BLOCKED) revert InvalidAccessType();
+
         if (profileClaimed[profileId]) revert ProfileHasClaimed();
         if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
         if (charactersLeft[character]-- == 0) revert CharacterSupplyExhausted();
@@ -105,9 +108,7 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     }
 
     /**
-     * Function used to transform an adventurer into Keydara.
-     * @param tokenId Adventurer token identifier.
-     * @param signature Signed message digest.
+     * @inheritdoc IAdventurer
      */
     function transformAdventurer(
         uint256 tokenId,
@@ -131,9 +132,24 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     }
 
     /**
-     * Function used to add `amount` to the supply of a character.
-     * @param characters Array of adventurer character types.
-     * @param amounts Array of supply amounts to add.
+     * @inheritdoc IAdventurer
+     */
+    function claimAdventurers(Characters character, address receiver) external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
+        if (receiver == address(0)) revert ZeroAddressInvalid();
+
+        uint256 remainingSupply = charactersLeft[character];
+        uint256 startTokenId = _nextTokenId();
+
+        for (uint256 i = 0; i < remainingSupply; i++) {
+            characterType[i+startTokenId] = character;
+        }
+
+        _mint({ to: receiver, quantity: remainingSupply });
+    }
+
+    /**
+     * @inheritdoc IAdventurer
      */
     function addCharacterSupply(
         Characters[] calldata characters,
@@ -145,6 +161,13 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
         for (uint256 i = 0; i < characters.length; i++) {
             _addCharacters(characters[i], amounts[i]);
         }
+    }
+
+    /**
+     * @inheritdoc IAdventurer
+     */
+    function updateMetadata() external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        emit BatchMetadataUpdate({ _fromTokenId: _startTokenId(), _toTokenId: _totalMinted() });
     }
 
     /**
@@ -172,8 +195,7 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     }
 
     /**
-     * Function used to set a new base token URI.
-     * @param newBaseTokenURI New base token URI value.
+     * @inheritdoc IAdventurer
      */
     function setBaseTokenURI(string calldata newBaseTokenURI) external onlyRoles(AccessRoles.ADMIN_ROLE) {
         string memory oldBaseTokenURI = __baseTokenURI;
@@ -183,13 +205,26 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     }
 
     /**
-     * Overriden to acknowledge support for ERC4906.
+     * @inheritdoc IAdventurer
+     */
+    function toggleClaimState() external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        ClaimState oldClaimState = claimState;
+        claimState = claimState == ClaimState.CLOSED ? ClaimState.ACTIVE : ClaimState.CLOSED;
+        emit ClaimStateUpdated({ oldClaimState: oldClaimState, newClaimState: claimState });
+    }
+
+    /**
+     * Overriden to acknowledge support for IERC4906.
      */
     function supportsInterface(bytes4 interfaceId) public view override(ERC721AUpgradeable, IERC721AUpgradeable) returns (bool) {
         return
-            interfaceId == 0x49064906 ||  // ERC4906
+            interfaceId == 0x49064906 ||  // IERC4906
             super.supportsInterface(interfaceId);
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _addCharacters(Characters character, uint256 amount) internal {
         if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
@@ -201,6 +236,10 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
         if (desiredState != claimState) revert InvalidClaimState();
     }
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                     ERC721A OVERRIDES                      */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     function _startTokenId() internal pure override returns (uint256) {
         return 1;
     }
@@ -208,6 +247,10 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     function _baseURI() internal view override returns (string memory) {
         return __baseTokenURI;
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       UUPSUPGRADEABLE                      */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _authorizeUpgrade(address) internal override onlyRoles(AccessRoles.ADMIN_ROLE) { }
 
