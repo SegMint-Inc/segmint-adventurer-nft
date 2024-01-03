@@ -3,15 +3,17 @@ pragma solidity 0.8.20;
 
 import { OwnableRoles } from "@solady/src/auth/OwnableRoles.sol";
 import { ECDSA } from "@solady/src/utils/ECDSA.sol";
-import { ERC721ABurnableUpgradeable } from "@erc721a-upgradeable/extensions/ERC721ABurnableUpgradeable.sol";
+import { ERC721AUpgradeable, ERC721ABurnableUpgradeable } from "@erc721a-upgradeable/extensions/ERC721ABurnableUpgradeable.sol";
+import { IERC721AUpgradeable } from "@erc721a-upgradeable/interfaces/IERC721AUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { AccessRoles } from "./access/AccessRoles.sol";
 import { IAccessRegistry } from "./interfaces/IAccessRegistry.sol";
 import { IAdventurer } from "./interfaces/IAdventurer.sol";
+import { IERC4906 } from "./interfaces/IERC4906.sol";
 import { Characters } from "./types/DataTypes.sol";
 
-contract Adventurer is IAdventurer, OwnableRoles, ERC721ABurnableUpgradeable, Initializable, UUPSUpgradeable {
+contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgradeable, Initializable, UUPSUpgradeable {
     using ECDSA for bytes32;
 
     string private __baseTokenURI;
@@ -51,11 +53,7 @@ contract Adventurer is IAdventurer, OwnableRoles, ERC721ABurnableUpgradeable, In
     }
 
     /**
-     * Function used to initialize storage of the proxy contract.
-     * @param _owner Owner address.
-     * @param _admin Admin address.
-     * @param _signer Signer address.
-     * @param _accessRegistry Access Registry address.
+     * @inheritdoc IAdventurer
      */
     function initialize(
         address _owner,
@@ -71,11 +69,13 @@ contract Adventurer is IAdventurer, OwnableRoles, ERC721ABurnableUpgradeable, In
             _accessRegistry == address(0)
         ) revert ZeroAddressInvalid();
 
-        __baseTokenURI = _baseTokenURI;
-
         __ERC721A_init({ name_: "Adventurer", symbol_: "ADVNT" });
+
         _initializeOwner({ newOwner: _owner });
         _grantRoles({ user: _admin, roles: AccessRoles.ADMIN_ROLE });
+        signer = _signer;
+        accessRegistry = IAccessRegistry(_accessRegistry);
+        __baseTokenURI = _baseTokenURI;
     }
 
     /**
@@ -123,10 +123,11 @@ contract Adventurer is IAdventurer, OwnableRoles, ERC721ABurnableUpgradeable, In
         characterType[tokenId] = Characters.UNDEFINED;
         _burn({ tokenId: tokenId, approvalCheck: false });
 
-        characterType[_nextTokenId()] = Characters.KEYDARA;
+        uint256 newTokenId = _nextTokenId();
+        characterType[newTokenId] = Characters.KEYDARA;
         _mint({ to: msg.sender, quantity: 1 });
 
-        emit AdventurerTransformed({ account: msg.sender, tokenId: tokenId });
+        emit AdventurerTransformed({ account: msg.sender, burntTokenId: tokenId, transformedId: newTokenId });
     }
 
     /**
@@ -179,6 +180,15 @@ contract Adventurer is IAdventurer, OwnableRoles, ERC721ABurnableUpgradeable, In
         __baseTokenURI = newBaseTokenURI;
 
         emit BaseTokenURIUpdated(oldBaseTokenURI, newBaseTokenURI);
+    }
+
+    /**
+     * Overriden to acknowledge support for ERC4906.
+     */
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721AUpgradeable, IERC721AUpgradeable) returns (bool) {
+        return
+            interfaceId == 0x49064906 ||  // ERC4906
+            super.supportsInterface(interfaceId);
     }
 
     function _addCharacters(Characters character, uint256 amount) internal {

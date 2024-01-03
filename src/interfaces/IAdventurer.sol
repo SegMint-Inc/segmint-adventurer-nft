@@ -71,9 +71,10 @@ interface IAdventurer {
     /**
      * Emitted when an adventurer is transformed.
      * @param account Account that transformed the adventurer.
-     * @param tokenId Unique token identifier that was transformed.
+     * @param burntTokenId Unique token identifier that was transformed.
+     * @param transformedId Transformed token identifier.
      */
-    event AdventurerTransformed(address indexed account, uint256 tokenId);
+    event AdventurerTransformed(address indexed account, uint256 burntTokenId, uint256 transformedId);
 
     /**
      * Emitted when the signer address is updated.
@@ -102,6 +103,22 @@ interface IAdventurer {
      * @param amount Amount added to the supply.
      */
     event CharacterSupplyUpdated(Characters indexed character, uint256 amount);
+
+    /**
+     * Function used to initialize storage of the proxy contract.
+     * @param _owner Owner address.
+     * @param _admin Admin address.
+     * @param _signer Signer address.
+     * @param _accessRegistry Access Registry address.
+     * @param _baseTokenURI Starting base token URI.
+     */
+    function initialize(
+        address _owner,
+        address _admin,
+        address _signer,
+        address _accessRegistry,
+        string memory _baseTokenURI
+    ) external;
 
     /**
      * Function used to update the signer address.
