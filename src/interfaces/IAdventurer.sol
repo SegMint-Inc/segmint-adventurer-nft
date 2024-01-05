@@ -30,6 +30,11 @@ interface IAdventurer {
     error ProfileHasClaimed();
 
     /**
+     * Thrown when an address has already claimed an adventurer.
+     */
+    error AccountHasClaimed();
+
+    /**
      * Thrown when an undefined character type is provided.
      */
     error UndefinedCharacterType();
@@ -200,6 +205,21 @@ interface IAdventurer {
      * Function used to toggle the existing claim state.
      */
     function toggleClaimState() external;
+
+    /**
+     * Function used to view if profile has claimed or not.
+     */
+    function profileClaimed(bytes32 profileId) external view returns (bool);
+
+    /**
+     * Function used to view the remaining supply of an adventurer.
+     */
+    function charactersLeft(Characters character) external view returns (uint256);
+
+    /**
+     * Function used to view the character type of a token.
+     */
+    function characterType(uint256 tokenId) external view returns (Characters);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                            ENUMS                           */

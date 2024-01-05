@@ -26,17 +26,17 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     ClaimState public claimState;
 
     /**
-     * Maps a profile identifier to whether it has claimed or not.
+     * @inheritdoc IAdventurer
      */
     mapping(bytes32 profileId => bool hasClaimed) public profileClaimed;
 
     /**
-     * Maps a character type to the remaining supply.
+     * @inheritdoc IAdventurer
      */
     mapping(Characters character => uint256 remainingSupply) public charactersLeft;
 
     /**
-     * Maps a token identifier to the respective character type.
+     * @inheritdoc IAdventurer
      */
     mapping(uint256 tokenId => Characters character) public characterType;
 
@@ -93,12 +93,14 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
         if (accountAccessType == IAccessRegistry.AccessType.BLOCKED) revert InvalidAccessType();
 
         if (profileClaimed[profileId]) revert ProfileHasClaimed();
+        if (_getAux({ owner: msg.sender}) == 1) revert AccountHasClaimed();
         if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
         if (charactersLeft[character]-- == 0) revert CharacterSupplyExhausted();
 
-        bytes32 digest = keccak256(abi.encodePacked(msg.sender, profileId, character));
+        bytes32 digest = keccak256(abi.encodePacked(msg.sender, profileId, character)).toEthSignedMessageHash();
         if (signer != digest.recover(signature)) revert SignerMismatch();
 
+        _setAux({ owner: msg.sender, aux: 1 });
         profileClaimed[profileId] = true;
         characterType[_nextTokenId()] = character;
 
@@ -134,6 +136,7 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     /**
      * @inheritdoc IAdventurer
      */
+    /// TODO: Rename this to be more explicit for treasury claiming.
     function claimAdventurers(Characters character, address receiver) external onlyRoles(AccessRoles.ADMIN_ROLE) {
         if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
         if (receiver == address(0)) revert ZeroAddressInvalid();
