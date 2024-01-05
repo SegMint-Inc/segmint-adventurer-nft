@@ -5,11 +5,14 @@ import "./Base.sol";
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ECDSA } from "@solady/src/utils/ECDSA.sol";
 
 import { Assertions } from "./utils/Assertions.sol";
 import { Errors } from "./utils/Errors.sol";
 import { Events } from "./utils/Events.sol";
 import { Users } from "./utils/Users.sol";
+
+import { Characters } from "../src/types/DataTypes.sol";
 
 abstract contract BaseTest is Base, Assertions, Errors, Events {
     using stdStorage for StdStorage;
