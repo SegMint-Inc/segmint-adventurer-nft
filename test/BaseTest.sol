@@ -5,17 +5,23 @@ import "./Base.sol";
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Ownable } from "@solady/src/auth/Ownable.sol";
 import { ECDSA } from "@solady/src/utils/ECDSA.sol";
 
 import { Assertions } from "./utils/Assertions.sol";
-import { Errors } from "./utils/Errors.sol";
 import { Events } from "./utils/Events.sol";
 import { Users } from "./utils/Users.sol";
 
+import { AccessRoles } from "../src/access/AccessRoles.sol";
 import { Characters } from "../src/types/DataTypes.sol";
 
-abstract contract BaseTest is Base, Assertions, Errors, Events {
+import { IERC4906 } from "../src/interfaces/IERC4906.sol";
+
+abstract contract BaseTest is Base, Assertions, Events {
     using stdStorage for StdStorage;
+    using stdJson for string;
+
+    string private jsonSupply;
 
     Users public users;
 
@@ -27,7 +33,7 @@ abstract contract BaseTest is Base, Assertions, Errors, Events {
 
     function _setUpBefore() internal {
         /// Create user wallets to be used in testing.
-        _createUsers();
+        createUsers();
 
         /// Assign state variables.
         owner = address(this);
@@ -45,8 +51,12 @@ abstract contract BaseTest is Base, Assertions, Errors, Events {
         bytes memory registryCode = abi.decode(vm.parseJson({ json: jsonFile, key: ".code" }), (bytes));
         vm.etch({ target: address(accessRegistry), newRuntimeBytecode: registryCode });
 
-        /// Grant access to Alice and Bob.
-        _grantAccess();
+        basePath = string.concat(root, "/data/");
+        path = string.concat(basePath, "CharacterSupply.json");
+        jsonSupply = vm.readFile(path);
+
+        /// Grant registry access to Alice and Bob.
+        grantRegistryAccess();
     }
 
     function _setUpAfter() internal {
@@ -59,12 +69,15 @@ abstract contract BaseTest is Base, Assertions, Errors, Events {
     /**
      * Helper function used to create users for testing purposes.
      */
-    function _createUsers() internal {
+    function createUsers() internal {
         users.admin = vm.createWallet({ walletLabel: "test.admin" });
         vm.label({ account: users.admin.addr, newLabel: "Admin" });
 
         users.signer = vm.createWallet({ walletLabel: "test.signer" });
         vm.label({ account: users.signer.addr, newLabel: "Signer" });
+
+        users.treasury = vm.createWallet({ walletLabel: "test.treasury" });
+        vm.label({ account: users.treasury.addr, newLabel: "Treasury" });
 
         users.alice = vm.createWallet({ walletLabel: "test.alice" });
         vm.label({ account: users.alice.addr, newLabel: "Alice (Standard User)" });
@@ -79,7 +92,7 @@ abstract contract BaseTest is Base, Assertions, Errors, Events {
     /**
      * Helper function used to set access types for Alice and Bob.
      */
-    function _grantAccess() internal {
+    function grantRegistryAccess() internal {
         stdstore
             .target(address(accessRegistry))
             .sig(IAccessRegistry.accessType.selector)
@@ -91,6 +104,21 @@ abstract contract BaseTest is Base, Assertions, Errors, Events {
             .sig(IAccessRegistry.accessType.selector)
             .with_key(users.bob.addr)
             .checked_write(uint256(IAccessRegistry.AccessType.UNRESTRICTED));
+    }
+
+    /**
+     * Helper function to parse adventurer supply from JSON.
+     */
+    function loadSupplyFromJSON() internal view returns (Characters[] memory characters, uint256[] memory amounts) {
+        uint256 length = 13;
+
+        characters = new Characters[](length);
+        amounts = new uint256[](length);
+
+        for (uint256 i = 0; i < characters.length; i++) {
+            characters[i] = Characters(i+1);
+            amounts[i] = abi.decode(vm.parseJson(jsonSupply, string(abi.encodePacked(".", vm.toString(i+1)))), (uint256));
+        }
     }
 
 }

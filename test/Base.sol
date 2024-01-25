@@ -5,10 +5,8 @@ import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { AccessRoles } from "../src/access/AccessRoles.sol";
 import { IAccessRegistry } from "../src/interfaces/IAccessRegistry.sol";
 import { IAdventurer } from "../src/interfaces/IAdventurer.sol";
-import { IERC4906 } from "../src/interfaces/IERC4906.sol";
 import { Adventurer } from "../src/Adventurer.sol";
 
 abstract contract Base is Script, Test {

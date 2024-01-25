@@ -8,6 +8,8 @@ struct Users {
     Vm.Wallet admin;
     /// Signer wallet
     Vm.Wallet signer;
+    /// Treasury wallet
+    Vm.Wallet treasury;
     /// Standard wallet
     Vm.Wallet alice;
     /// Standard wallet

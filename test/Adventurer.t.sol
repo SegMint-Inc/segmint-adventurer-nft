@@ -156,9 +156,7 @@ contract AdventurerTest is BaseTest {
     /* `claimAdventurer()` Tests */
 
     function test_ClaimAdventurer_Fuzzed(bytes32 profileId, uint256 characterId) public initializeClaim {
-        characterId = bound(characterId, 1, 13);
-
-        Characters character = Characters(characterId);
+        Characters character = Characters(bound(characterId, 1, 13));
         bytes memory signature = getClaimSignature(users.alice.addr, profileId, character);
 
         uint256 oldCharacterSupply = adventurer.charactersLeft(character);
@@ -174,6 +172,399 @@ contract AdventurerTest is BaseTest {
         assertEq(adventurer.totalSupply(), 1);
     }
 
+    function testCannot_ClaimAdventurer_InvalidClaimState_Fuzzed(bytes32 profileId, uint256 characterId) public {
+        Characters character = Characters(bound(characterId, 1, 13));
+        bytes memory signature = getClaimSignature(users.eve.addr, profileId, character);
+
+        hoax(users.eve.addr);
+        vm.expectRevert(IAdventurer.InvalidClaimState.selector);
+        adventurer.claimAdventurer(profileId, character, signature);
+    }
+
+    function testCannot_ClaimAdventurer_InvalidAccessType_Fuzzed(
+        bytes32 profileId,
+        uint256 characterId
+    ) public initializeClaim {
+        Characters character = Characters(bound(characterId, 1, 13));
+        bytes memory signature = getClaimSignature(users.eve.addr, profileId, character);
+
+        hoax(users.eve.addr);
+        vm.expectRevert(IAdventurer.InvalidAccessType.selector);
+        adventurer.claimAdventurer(profileId, character, signature);
+    }
+
+    function testCannot_ClaimAdventurer_ProfileHasClaimed_Fuzzed(
+        bytes32 profileId,
+        uint256 characterId
+    ) public initializeClaim {
+        Characters character = Characters(bound(characterId, 1, 13));
+        bytes memory signature = getClaimSignature(users.alice.addr, profileId, character);
+
+        startHoax(users.alice.addr);
+        adventurer.claimAdventurer(profileId, character, signature);
+        vm.expectRevert(IAdventurer.ProfileHasClaimed.selector);
+        adventurer.claimAdventurer(profileId, character, signature);
+    }
+
+    function testCannot_ClaimAdventurer_AccountHasClaimed_Fuzzed(
+        bytes32 profileId,
+        uint256 characterId
+    ) public initializeClaim {
+        Characters character = Characters(bound(characterId, 1, 13));
+        bytes memory signature = getClaimSignature(users.alice.addr, profileId, character);
+
+        startHoax(users.alice.addr);
+        adventurer.claimAdventurer(profileId, character, signature);
+
+        profileId = keccak256(abi.encodePacked(profileId));
+        signature = getClaimSignature(users.alice.addr, profileId, character);
+
+        vm.expectRevert(IAdventurer.AccountHasClaimed.selector);
+        adventurer.claimAdventurer(profileId, character, signature);
+    }
+
+    function testCannot_ClaimAdventurer_UndefinedCharacterType_Fuzzed(
+        bytes32 profileId
+    ) public initializeClaim {
+        bytes memory signature = getClaimSignature({
+            account: users.alice.addr,
+            profileId: profileId,
+            character: Characters.UNDEFINED
+        });
+
+        hoax(users.alice.addr);
+        vm.expectRevert(IAdventurer.UndefinedCharacterType.selector);
+        adventurer.claimAdventurer(profileId, Characters.UNDEFINED, signature);
+    }
+
+    function testCannot_ClaimAdventurer_CharacterSupplyExhausted() public initializeClaim {
+        Characters character = Characters.LOCKIANI;
+        uint256 amount = adventurer.charactersLeft(character);
+
+        hoax(users.admin.addr);
+        adventurer.treasuryMint(character, amount, users.treasury.addr);
+
+        bytes32 profileId = keccak256(abi.encodePacked("test.profile"));
+        bytes memory signature = getClaimSignature(users.alice.addr, profileId, character);
+
+
+        hoax(users.alice.addr);
+        vm.expectRevert(IAdventurer.CharacterSupplyExhausted.selector);
+        adventurer.claimAdventurer(profileId, character, signature);
+    }
+
+    function testCannot_ClaimAdventurer_SignerMismatch_Fuzzed(
+        bytes32 profileId,
+        uint256 characterId
+    ) public initializeClaim {
+        Characters character = Characters(bound(characterId, 1, 13));
+        bytes memory signature = getClaimSignature(users.bob.addr, profileId, character);
+
+        hoax(users.alice.addr);
+        vm.expectRevert(IAdventurer.SignerMismatch.selector);
+        adventurer.claimAdventurer(profileId, character, signature);
+    }
+
+    /* `transformAdventurer()` Tests */
+
+    function test_TransformAdventurer_Fuzzed(
+        bytes32 profileId,
+        uint256 characterId
+    ) public initializeClaim {
+        Characters character = Characters(bound(characterId, 1, 13));
+
+        startHoax(users.alice.addr);
+        adventurer.claimAdventurer({
+            profileId: profileId,
+            character: character,
+            signature: getClaimSignature(users.alice.addr, profileId, character)
+        });
+
+        vm.expectEmit({ checkTopic1: true, checkTopic2: false, checkTopic3: false, checkData: true });
+        emit AdventurerTransformed({ account: users.alice.addr, burntTokenId: 1, transformedId: 2 });
+        adventurer.transformAdventurer({
+            tokenId: 1,
+            signature: getTransformSignature({ account: users.alice.addr, tokenId: 1 })
+        });
+
+        /// TODO: Test state updates.
+    }
+
+    function testCannot_TransformAdventurer_InvalidClaimState() public {
+        hoax(users.alice.addr);
+        vm.expectRevert(IAdventurer.InvalidClaimState.selector);
+        adventurer.transformAdventurer({ tokenId: 0, signature: "" });
+    }
+
+    function testCannot_TransformAdventurer_NonExistentTokenId_Fuzzed(uint256 randId) public initializeClaim {
+        hoax(users.alice.addr);
+        vm.expectRevert(IAdventurer.NonExistentTokenId.selector);
+        adventurer.transformAdventurer({ tokenId: randId, signature: "" });
+    }
+
+    function testCannot_TransformAdventurer_CallerNotOwner_Fuzzed(
+        bytes32 profileId,
+        uint256 characterId,
+        address nonOwner
+    ) public initializeClaim {
+        Characters character = Characters(bound(characterId, 1, 13));
+        vm.assume(nonOwner != users.alice.addr);
+
+        startHoax(users.alice.addr);
+        adventurer.claimAdventurer({
+            profileId: profileId,
+            character: character,
+            signature: getClaimSignature(users.alice.addr, profileId, character)
+        });
+        vm.stopPrank();
+
+        hoax(users.eve.addr);
+        vm.expectRevert(IAdventurer.CallerNotOwner.selector);
+        adventurer.transformAdventurer({ tokenId: 1, signature: "" });
+    }
+
+    function testCanot_TransformAdventurer_SignerMismatch(
+        bytes32 profileId,
+        uint256 characterId
+    ) public initializeClaim {
+        Characters character = Characters(bound(characterId, 1, 13));
+
+        startHoax(users.alice.addr);
+        adventurer.claimAdventurer({
+            profileId: profileId,
+            character: character,
+            signature: getClaimSignature(users.alice.addr, profileId, character)
+        });
+
+        vm.expectRevert(IAdventurer.SignerMismatch.selector);
+        adventurer.transformAdventurer({
+            tokenId: 1,
+            signature: getTransformSignature({ account: users.bob.addr, tokenId: 1 })
+        });
+    }
+
+    /* `setCharacterSupply()` Tests */
+
+    function test_SetCharacterSupply() public {
+        (Characters[] memory characters, uint256[] memory amounts) = loadSupplyFromJSON();
+
+        // Expect event emission for each character.
+        for (uint256 i = 0; i < characters.length; i++) {
+            vm.expectEmit({ checkTopic1: true, checkTopic2: false, checkTopic3: false, checkData: true });
+            emit CharacterSupplyUpdated({ character: characters[i], amount: amounts[i] });
+        }
+
+        hoax(users.admin.addr);
+        adventurer.setCharacterSupply(characters, amounts);
+
+        for (uint256 i = 0; i < characters.length; i++) {
+            assertEq(adventurer.charactersLeft(characters[i]), amounts[i]);
+        }
+    }
+
+    function testCannot_SetCharacterSupply_Unauthorized_Fuzzed(address nonAdmin) public {
+        (Characters[] memory characters, uint256[] memory amounts) = loadSupplyFromJSON();
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.setCharacterSupply(characters, amounts);
+    }
+
+    function testCannot_SetCharacterSupply_ArrayLengthMismatch_Fuzzed(uint256 a, uint256 b) public {
+        a = bound(a, 1, 32);
+        b = bound(b, 1, 32);
+        vm.assume(a != b);
+
+        hoax(users.admin.addr);
+        vm.expectRevert(IAdventurer.ArrayLengthMismatch.selector);
+        adventurer.setCharacterSupply({ characters: new Characters[](a), amounts: new uint256[](b) });
+    }
+
+    function testCannot_SetCharacterSupply_ZeroLengthArray() public {
+        hoax(users.admin.addr);
+        vm.expectRevert(IAdventurer.ZeroLengthArray.selector);
+        adventurer.setCharacterSupply({ characters: new Characters[](0), amounts: new uint256[](0) });
+    }
+
+    function testCannot_SetCharacterSupply_UndefinedCharacterType_Fuzzed(uint256 idx) public {
+        idx = bound(idx, 0, 12);
+        
+        (Characters[] memory characters, uint256[] memory amounts) = loadSupplyFromJSON();
+        characters[idx] = Characters.UNDEFINED;
+
+        hoax(users.admin.addr);
+        vm.expectRevert(IAdventurer.UndefinedCharacterType.selector);
+        adventurer.setCharacterSupply(characters, amounts);
+    }
+
+    /* `treasuryMint()` Tests */
+
+    function test_treasuryMint_Fuzzed(uint256 characterId, uint256 mintAmount) public initializeClaim {
+        characterId = bound(characterId, 1, 13);
+        mintAmount = bound(mintAmount, 1, 50);
+
+        hoax(users.admin.addr);
+        adventurer.treasuryMint({
+            character: Characters(characterId),
+            amount: mintAmount,
+            receiver: users.treasury.addr
+        });
+
+        assertEq(adventurer.balanceOf({ owner: users.treasury.addr }), mintAmount);
+        assertEq(adventurer.totalSupply(), mintAmount);
+
+        for (uint256 i = 1; i <= mintAmount; i++) {
+            assertEq(adventurer.characterType({ tokenId: i }), Characters(characterId));
+        }
+    }
+
+    function testCannot_TreasuryMint_Unauthorized_Fuzzed(address nonGameMaster) public initializeClaim {
+        vm.assume(nonGameMaster != users.admin.addr);
+
+        hoax(nonGameMaster);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.treasuryMint({ character: Characters.CYPHERON, amount: 1, receiver: nonGameMaster });
+    }
+
+    function testCannot_TreasuryMint_UndefinedCharacterType() public initializeClaim {
+        hoax(users.admin.addr);
+        vm.expectRevert(IAdventurer.UndefinedCharacterType.selector);
+        adventurer.treasuryMint({ character: Characters.UNDEFINED, amount: 1, receiver: users.treasury.addr });
+    }
+
+    function testCannot_TreasuryMint_ZeroAddressInvalid() public initializeClaim {
+        hoax(users.admin.addr);
+        vm.expectRevert(IAdventurer.ZeroAddressInvalid.selector);
+        adventurer.treasuryMint({ character: Characters.CHRONOSIA, amount: 1, receiver: address(0) });
+    }
+
+    function testCannot_TreasuryMint_AmountOverSupply_Fuzzed(uint256 characterId) public initializeClaim {
+        Characters character = Characters(bound(characterId, 1, 13));
+        uint256 mintAmount = adventurer.charactersLeft(character) + 1;
+
+        hoax(users.admin.addr);
+        vm.expectRevert(IAdventurer.AmountOverSupply.selector);
+        adventurer.treasuryMint({ character: character, amount: mintAmount, receiver: users.treasury.addr });
+    }
+
+    /* `updateMetadata()` Tests */
+
+    function test_UpdateMetadata() public {
+        hoax(users.admin.addr);
+        adventurer.updateMetadata();
+    }
+
+    function testCannot_UpdateMetadata_Unauthorized_Fuzzed(address nonAdmin) public {
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.updateMetadata();
+    }
+
+    /* `setSigner()` Tests */
+
+    function test_SetSigner_Fuzzed(address newSigner) public {
+        vm.assume(newSigner != address(0));
+        address oldSigner = adventurer.signer();
+        
+        hoax(users.admin.addr);
+        vm.expectEmit({ checkTopic1: true, checkTopic2: true, checkTopic3: false, checkData: true });
+        emit SignerUpdated(oldSigner, newSigner);
+        adventurer.setSigner(newSigner);
+
+        assertEq(adventurer.signer(), newSigner);
+    }
+
+    function testCannot_SetSigner_Unauthorized_Fuzzed(address nonAdmin) public {
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.setSigner({ newSigner: nonAdmin });
+    }
+
+    function testCannot_SetSigner_ZeroAddressInvalid() public {
+        hoax(users.admin.addr);
+        vm.expectRevert(IAdventurer.ZeroAddressInvalid.selector);
+        adventurer.setSigner({ newSigner: address(0) });
+    }
+
+    /* `setAccessRegistry()` Tests */
+
+    function test_SetAccessRegistry(IAccessRegistry newAccessRegistry) public {
+        vm.assume(address(newAccessRegistry) != address(0));
+        IAccessRegistry oldAccessRegistry = adventurer.accessRegistry();
+
+        hoax(users.admin.addr);
+        vm.expectEmit({ checkTopic1: true, checkTopic2: true, checkTopic3: false, checkData: true });
+        emit AccessRegistryUpdated(oldAccessRegistry, newAccessRegistry);
+        adventurer.setAccessRegistry(newAccessRegistry);
+
+        assertEq(adventurer.accessRegistry(), newAccessRegistry);
+    }
+
+    function testCannot_SetAccessRegistry_Unauthorized(address nonAdmin) public {
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.setAccessRegistry({ newAccessRegistry: IAccessRegistry(nonAdmin) });
+    }
+
+    function testCannot_SetAccessRegistry_ZeroAddressInvalid() public {
+        hoax(users.admin.addr);
+        vm.expectRevert(IAdventurer.ZeroAddressInvalid.selector);
+        adventurer.setAccessRegistry({ newAccessRegistry: IAccessRegistry(address(0)) });
+    }
+
+    /* `setBaseTokenURI()` Tests */
+
+    function test_SetBaseTokenURI_Fuzzed(string memory newBaseTokenURI) public {
+        hoax(users.admin.addr);
+        vm.expectEmit({ checkTopic1: false, checkTopic2: false, checkTopic3: false, checkData: true });
+        emit BaseTokenURIUpdated({ oldBaseTokenURI: baseTokenURI, newBaseTokenURI: newBaseTokenURI });
+        adventurer.setBaseTokenURI(newBaseTokenURI);
+    }
+
+    function testCannot_SetBaseTokenURI_Unauthorized_Fuzzed(address nonAdmin) public {
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.setBaseTokenURI({ newBaseTokenURI: "" });
+    }
+
+    /* `toggleClaimState()` Tests */
+
+    function test_ToggleClaimState() public {
+        IAdventurer.ClaimState oldClaimState = adventurer.claimState();
+        IAdventurer.ClaimState newClaimState = IAdventurer.ClaimState.ACTIVE;
+
+        hoax(users.admin.addr);
+        vm.expectEmit({ checkTopic1: false, checkTopic2: false, checkTopic3: false, checkData: true });
+        emit ClaimStateUpdated(oldClaimState, newClaimState);
+        adventurer.toggleClaimState();
+
+        assertEq(adventurer.claimState(), newClaimState);
+    }
+
+    function testCannot_ToggleClaimState_Unauthorized_Fuzzed(address nonAdmin) public {
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.toggleClaimState();
+    }
+
+    /* `supportsInterface()` Tests */
+
+    function test_SupportsInterface() public {
+        assertTrue(adventurer.supportsInterface({ interfaceId: 0x49064906 })); // ERC4906
+        assertTrue(adventurer.supportsInterface({ interfaceId: 0x80ac58cd })); // ERC721
+    }
+ 
     /* Helper Functions */
 
     function getClaimSignature(
@@ -186,35 +577,21 @@ contract AdventurerTest is BaseTest {
         return abi.encodePacked(r, s, v);
     }
 
+    function getTransformSignature(
+        address account,
+        uint256 tokenId
+    ) internal view returns (bytes memory) {
+        bytes32 digest = keccak256(abi.encodePacked(account, tokenId)).toEthSignedMessageHash();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign({ privateKey: users.signer.privateKey, digest: digest });
+        return abi.encodePacked(r, s, v);
+    }
+
     function _initializeClaim() internal {
+        (Characters[] memory characters, uint256[] memory amounts) = loadSupplyFromJSON();
         startHoax(users.admin.addr);
-        adventurer.addCharacterSupply({ characters: _getCharacters(), amounts: _getAmounts() });
+        adventurer.setCharacterSupply(characters, amounts);
         adventurer.toggleClaimState();
         vm.stopPrank();
-    }
-
-    function _getCharacters() internal pure returns (Characters[] memory characters) {
-        characters = new Characters[](13);
-        for (uint256 i = 0; i < characters.length; i++) {
-            characters[i] = Characters(i+1);
-        }
-    }
-
-    function _getAmounts() internal pure returns (uint256[] memory amounts) {
-        amounts = new uint256[](13);
-        amounts[0] = 120;
-        amounts[1] = 200;
-        amounts[2] = 300;
-        amounts[3] = 400;
-        amounts[4] = 500;
-        amounts[5] = 750;
-        amounts[6] = 1250;
-        amounts[7] = 1500;
-        amounts[8] = 3500;
-        amounts[9] = 5000;
-        amounts[10] = 7500;
-        amounts[11] = 9000;
-        amounts[12] = type(uint256).max;
     }
 
 }
