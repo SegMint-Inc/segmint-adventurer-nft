@@ -4,6 +4,10 @@ pragma solidity 0.8.20;
 import { IAccessRegistry } from "./IAccessRegistry.sol";
 import { Characters } from "../types/DataTypes.sol";
 
+/**
+ * @title IAdventurer
+ * @notice Interface for Adventurer.
+ */
 interface IAdventurer {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ERRORS                           */
@@ -73,6 +77,11 @@ interface IAdventurer {
      * Thrown when the caller does not have a valid access type from the Access Registry.
      */
     error InvalidAccessType();
+
+    /**
+     * Thrown when the amount to mint exceeds the remaining supply.
+     */
+    error AmountOverSupply();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
@@ -165,18 +174,19 @@ interface IAdventurer {
     function transformAdventurer(uint256 tokenId, bytes calldata signature) external;
 
     /**
-     * Function used to claim the remaining supply of tokens.
-     * @param character Adventurer character type to claim.     
+     * Function used to mint characters for the treasury.
+     * @param character Adventurer character type to claim.
+     * @param amount Number of adventurers to mint.
      * @param receiver Receiving address of the newly minted adventurers.
      */
-    function claimAdventurers(Characters character, address receiver) external;
+    function treasuryMint(Characters character, uint256 amount, address receiver) external;
 
     /**
      * Function used to add `amount` to the supply of a character.
      * @param characters Array of adventurer character types.
      * @param amounts Array of supply amounts to add.
      */
-    function addCharacterSupply(Characters[] calldata characters, uint256[] calldata amounts) external;
+    function setCharacterSupply(Characters[] calldata characters, uint256[] calldata amounts) external;
 
     /**
      * Function used to emit an ERC4906 event to update the metadata for all existing tokens.

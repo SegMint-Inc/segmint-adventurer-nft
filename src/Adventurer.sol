@@ -73,11 +73,12 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
         ) revert ZeroAddressInvalid();
 
         __ERC721A_init({ name_: "Adventurer", symbol_: "ADVNT" });
-
         _initializeOwner({ newOwner: _owner });
         _grantRoles({ user: _admin, roles: AccessRoles.ADMIN_ROLE });
+
         signer = _signer;
         accessRegistry = IAccessRegistry(_accessRegistry);
+
         __baseTokenURI = _baseTokenURI;
     }
 
@@ -93,9 +94,11 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
         if (accountAccessType == IAccessRegistry.AccessType.BLOCKED) revert InvalidAccessType();
 
         if (profileClaimed[profileId]) revert ProfileHasClaimed();
-        if (_getAux({ owner: msg.sender}) == 1) revert AccountHasClaimed();
+        if (_getAux({ owner: msg.sender }) == 1) revert AccountHasClaimed();
         if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
-        if (charactersLeft[character]-- == 0) revert CharacterSupplyExhausted();
+
+        if (charactersLeft[character] == 0) revert CharacterSupplyExhausted();
+        charactersLeft[character]--;
 
         bytes32 digest = keccak256(abi.encodePacked(msg.sender, profileId, character)).toEthSignedMessageHash();
         if (signer != digest.recover(signature)) revert SignerMismatch();
@@ -119,7 +122,7 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
         if (!_exists(tokenId)) revert NonExistentTokenId();
         if (msg.sender != ownerOf(tokenId)) revert CallerNotOwner();
 
-        bytes32 digest = keccak256(abi.encodePacked(msg.sender, tokenId));
+        bytes32 digest = keccak256(abi.encodePacked(msg.sender, tokenId)).toEthSignedMessageHash();
         if (signer != digest.recover(signature)) revert SignerMismatch();
 
         // Reset the state for the provided adventurer token.
@@ -136,25 +139,30 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     /**
      * @inheritdoc IAdventurer
      */
-    /// TODO: Rename this to be more explicit for treasury claiming.
-    function claimAdventurers(Characters character, address receiver) external onlyRoles(AccessRoles.ADMIN_ROLE) {
+    function treasuryMint(
+        Characters character,
+        uint256 amount,
+        address receiver
+    ) external onlyRoles(AccessRoles.ADMIN_ROLE) {
         if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
         if (receiver == address(0)) revert ZeroAddressInvalid();
 
         uint256 remainingSupply = charactersLeft[character];
-        uint256 startTokenId = _nextTokenId();
+        if (amount > remainingSupply) revert AmountOverSupply();
+        charactersLeft[character] -= amount;
 
-        for (uint256 i = 0; i < remainingSupply; i++) {
+        uint256 startTokenId = _nextTokenId();
+        for (uint256 i = 0; i < amount; i++) {
             characterType[i+startTokenId] = character;
         }
 
-        _mint({ to: receiver, quantity: remainingSupply });
+        _mint({ to: receiver, quantity: amount });
     }
 
     /**
      * @inheritdoc IAdventurer
      */
-    function addCharacterSupply(
+    function setCharacterSupply(
         Characters[] calldata characters,
         uint256[] calldata amounts
     ) external onlyRoles(AccessRoles.ADMIN_ROLE) {
@@ -231,7 +239,7 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
 
     function _addCharacters(Characters character, uint256 amount) internal {
         if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
-        charactersLeft[character] += amount;
+        charactersLeft[character] = amount;
         emit CharacterSupplyUpdated(character, amount);
     }
 

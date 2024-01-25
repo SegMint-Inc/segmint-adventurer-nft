@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 /**
  * @title IAccessRegistry
+ * @notice Interface for Access Registry.
  */
 interface IAccessRegistry {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
