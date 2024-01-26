@@ -562,7 +562,119 @@ contract AdventurerTest is BaseTest {
 
     function test_SupportsInterface() public {
         assertTrue(adventurer.supportsInterface({ interfaceId: 0x49064906 })); // ERC4906
+        assertTrue(adventurer.supportsInterface({ interfaceId: 0x2a55205a })); // ERC2981
         assertTrue(adventurer.supportsInterface({ interfaceId: 0x80ac58cd })); // ERC721
+    }
+
+    /* ERC2981 Tests */
+
+    function test_SetDefaultRoyalty_Fuzzed(
+        address randAddr,
+        uint256 feeNumerator,
+        uint256 salePrice
+    ) public {
+        vm.assume(randAddr != address(0));
+        feeNumerator = bound(feeNumerator, 0, 10_000);
+        salePrice = bound(salePrice, 0 wei, 10 ether);
+        uint256 expectedFee = salePrice * feeNumerator / 10_000;
+
+        hoax(users.admin.addr);
+        adventurer.setDefaultRoyalty({ receiver: randAddr, feeNumerator: uint96(feeNumerator) });
+
+        (address receiver, uint256 royaltyFee) = adventurer.royaltyInfo({ tokenId: 1, salePrice: salePrice });
+        assertEq(receiver, randAddr);
+        assertEq(royaltyFee, expectedFee);
+    }
+
+    function testCannot_SetDefaultyRoyalty_Unauthorized_Fuzzed(address nonAdmin) public {
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.setDefaultRoyalty({ receiver: nonAdmin, feeNumerator: 10_000 });
+    }
+
+    function test_DeleteDefaultRoyalty_Fuzzed(
+        address randAddr,
+        uint256 feeNumerator,
+        uint256 salePrice
+    ) public {
+        vm.assume(randAddr != address(0));
+        feeNumerator = bound(feeNumerator, 0, 10_000);
+        salePrice = bound(salePrice, 0 wei, 10 ether);
+        uint256 expectedFee = salePrice * feeNumerator / 10_000;
+
+        startHoax(users.admin.addr);
+        adventurer.setDefaultRoyalty({ receiver: randAddr, feeNumerator: uint96(feeNumerator) });
+
+        (address receiver, uint256 royaltyFee) = adventurer.royaltyInfo({ tokenId: 1, salePrice: salePrice });
+        assertEq(receiver, randAddr);
+        assertEq(royaltyFee, expectedFee);
+
+        adventurer.deleteDefaultRoyalty();
+        (receiver, royaltyFee) = adventurer.royaltyInfo({ tokenId: 1, salePrice: salePrice });
+        assertEq(receiver, address(0));
+        assertEq(royaltyFee, 0);
+    }
+
+    function testCannot_DeleteDefaultRoyalty_Unauthorized_Fuzzed(address nonAdmin) public {
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.deleteDefaultRoyalty();
+    }
+
+    function test_SetTokenRoyalty_Fuzzed(
+        address randAddr,
+        uint256 feeNumerator,
+        uint256 salePrice,
+        uint256 tokenId
+    ) public {
+        vm.assume(randAddr != address(0));
+        feeNumerator = bound(feeNumerator, 0, 10_000);
+        salePrice = bound(salePrice, 0 wei, 10 ether);
+        uint256 expectedFee = salePrice * feeNumerator / 10_000;
+
+        hoax(users.admin.addr);
+        adventurer.setTokenRoyalty({ tokenId: tokenId, receiver: randAddr, feeNumerator: uint96(feeNumerator) });
+
+        (address receiver, uint256 royaltyFee) = adventurer.royaltyInfo({ tokenId: tokenId, salePrice: salePrice });
+        assertEq(receiver, randAddr);
+        assertEq(royaltyFee, expectedFee);
+    }
+
+    function testCannot_SetTokenRoyalty_Unauthorized_Fuzzed(address nonAdmin) public {
+        vm.assume(nonAdmin != users.admin.addr);
+
+        hoax(nonAdmin);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        adventurer.setTokenRoyalty({ tokenId: 1, receiver: nonAdmin, feeNumerator: uint96(5_000) });
+    }
+
+    function test_ResetTokenRoyalty_Fuzzed(
+        address randAddr,
+        uint256 feeNumerator,
+        uint256 salePrice,
+        uint256 tokenId
+    ) public {
+        vm.assume(randAddr != address(0));
+        feeNumerator = bound(feeNumerator, 0, 10_000);
+        salePrice = bound(salePrice, 0 wei, 10 ether);
+        uint256 expectedFee = salePrice * feeNumerator / 10_000;
+
+        startHoax(users.admin.addr);
+        adventurer.setTokenRoyalty({ tokenId: tokenId, receiver: randAddr, feeNumerator: uint96(feeNumerator) });
+
+        (address receiver, uint256 royaltyFee) = adventurer.royaltyInfo({ tokenId: tokenId, salePrice: salePrice });
+        assertEq(receiver, randAddr);
+        assertEq(royaltyFee, expectedFee);
+
+        adventurer.resetTokenRoyalty(tokenId);
+
+        (receiver, royaltyFee) = adventurer.royaltyInfo({ tokenId: tokenId, salePrice: salePrice });
+        assertEq(receiver, address(0));
+        assertEq(royaltyFee, 0);
     }
  
     /* Helper Functions */
