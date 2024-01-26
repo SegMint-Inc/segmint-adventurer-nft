@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import { OwnableRoles } from "@solady/src/auth/OwnableRoles.sol";
-import { ECDSA } from "@solady/src/utils/ECDSA.sol";
-import { ERC721AUpgradeable, ERC721ABurnableUpgradeable } from "@erc721a-upgradeable/extensions/ERC721ABurnableUpgradeable.sol";
+import {
+    ERC721AUpgradeable,
+    ERC721ABurnableUpgradeable
+} from "@erc721a-upgradeable/extensions/ERC721ABurnableUpgradeable.sol";
 import { IERC721AUpgradeable } from "@erc721a-upgradeable/interfaces/IERC721AUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OwnableRoles } from "@solady/src/auth/OwnableRoles.sol";
+import { ECDSA } from "@solady/src/utils/ECDSA.sol";
+import { ERC2981 } from "@solady/src/tokens/ERC2981.sol";
 import { AccessRoles } from "./access/AccessRoles.sol";
 import { IAccessRegistry } from "./interfaces/IAccessRegistry.sol";
 import { IAdventurer } from "./interfaces/IAdventurer.sol";
@@ -16,7 +20,15 @@ import { Characters } from "./types/DataTypes.sol";
 /**
  * @title Adventurer
  */
-contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgradeable, Initializable, UUPSUpgradeable {
+contract Adventurer is
+    IAdventurer,
+    IERC4906,
+    ERC2981,
+    OwnableRoles,
+    ERC721ABurnableUpgradeable,
+    Initializable,
+    UUPSUpgradeable
+{
     using ECDSA for bytes32;
 
     string private __baseTokenURI;
@@ -225,12 +237,33 @@ contract Adventurer is IAdventurer, IERC4906, OwnableRoles, ERC721ABurnableUpgra
     }
 
     /**
-     * Overriden to acknowledge support for IERC4906.
+     * Overriden to acknowledge support for IERC4906 and IERC2981.
      */
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721AUpgradeable, IERC721AUpgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721AUpgradeable, IERC721AUpgradeable, ERC2981) returns (bool) {
         return
             interfaceId == 0x49064906 ||  // IERC4906
+            ERC2981.supportsInterface(interfaceId) ||
             super.supportsInterface(interfaceId);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           ERC2981                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+
+    function deleteDefaultRoyalty() external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        _deleteDefaultRoyalty();
+    }
+
+    function setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeNumerator) external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        _setTokenRoyalty(tokenId, receiver, feeNumerator);
+    }
+
+    function resetTokenRoyalty(uint256 tokenId) external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        _resetTokenRoyalty(tokenId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
