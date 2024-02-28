@@ -46,8 +46,9 @@ contract AddCharacterSupplyScript is Base {
         uint256[] memory a = new uint256[](length);
 
         for (uint256 i = 0; i < c.length; i++) {
-            c[i] = Characters(i+1);
-            a[i] = abi.decode(vm.parseJson(jsonCharacters, string(abi.encodePacked(".", vm.toString(i+1)))), (uint256));
+            c[i] = Characters(i + 1);
+            a[i] =
+                abi.decode(vm.parseJson(jsonCharacters, string(abi.encodePacked(".", vm.toString(i + 1)))), (uint256));
         }
 
         return (c, a);
