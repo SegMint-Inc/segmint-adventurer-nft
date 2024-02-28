@@ -279,6 +279,9 @@ contract AdventurerTest is BaseTest {
             character: character,
             signature: getClaimSignature(users.alice.addr, profileId, character)
         });
+        assertEq(adventurer.ownerOf({ tokenId: 1 }), users.alice.addr);
+        assertEq(adventurer.balanceOf({ owner: users.alice.addr }), 1);
+        assertEq(adventurer.totalSupply(), 1);
 
         vm.expectEmit({ checkTopic1: true, checkTopic2: false, checkTopic3: false, checkData: true });
         emit AdventurerTransformed({ account: users.alice.addr, burntTokenId: 1, transformedId: 2 });
@@ -287,7 +290,13 @@ contract AdventurerTest is BaseTest {
             signature: getTransformSignature({ account: users.alice.addr, tokenId: 1 })
         });
 
-        /// TODO: Test state updates.
+        vm.expectRevert();
+        adventurer.ownerOf({ tokenId: 1 });
+        assertEq(adventurer.ownerOf({ tokenId: 2 }), users.alice.addr);
+        assertEq(adventurer.balanceOf({ owner: users.alice.addr }), 1);
+        assertEq(adventurer.characterType({ tokenId: 1 }), Characters.UNDEFINED);
+        assertEq(adventurer.characterType({ tokenId: 2 }), Characters.RISKUS);
+        assertEq(adventurer.totalSupply(), 1);
     }
 
     function testCannot_TransformAdventurer_InvalidClaimState() public {

@@ -142,7 +142,7 @@ contract Adventurer is
         _burn({ tokenId: tokenId, approvalCheck: false });
 
         uint256 newTokenId = _nextTokenId();
-        characterType[newTokenId] = Characters.KEYDARA;
+        characterType[newTokenId] = Characters.RISKUS;
         _mint({ to: msg.sender, quantity: 1 });
 
         emit AdventurerTransformed({ account: msg.sender, burntTokenId: tokenId, transformedId: newTokenId });
