@@ -13,8 +13,6 @@ import { Events } from "./utils/Events.sol";
 import { Users } from "./utils/Users.sol";
 
 import { AccessRoles } from "../src/access/AccessRoles.sol";
-import { Characters } from "../src/types/DataTypes.sol";
-
 import { IERC4906 } from "../src/interfaces/IERC4906.sol";
 
 abstract contract BaseTest is Base, Assertions, Events {

@@ -8,6 +8,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { IAccessRegistry } from "../src/interfaces/IAccessRegistry.sol";
 import { IAdventurer } from "../src/interfaces/IAdventurer.sol";
 import { Adventurer } from "../src/Adventurer.sol";
+import { Characters } from "../src/types/DataTypes.sol";
 
 abstract contract Base is Script, Test {
     /// Core contracts.
