@@ -40,7 +40,7 @@ contract DeployScript is Base {
         path = string.concat(basePath, vm.envString("DEPLOYMENT_FILENAME"));
 
         /// Write deployment addresses to file.
-        bytes32 implementation = vm.load({target: address(adventurer), slot: implementationSlot});
+        bytes32 implementation = vm.load({ target: address(adventurer), slot: implementationSlot });
         vm.writeJson(
             vm.serializeAddress("", "adventurerImplementation", address(uint160(uint256(implementation)))), path
         );

@@ -5,17 +5,17 @@ import {
     ERC721AUpgradeable,
     ERC721ABurnableUpgradeable
 } from "@erc721a-upgradeable/extensions/ERC721ABurnableUpgradeable.sol";
-import {IERC721AUpgradeable} from "@erc721a-upgradeable/interfaces/IERC721AUpgradeable.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {OwnableRoles} from "@solady/src/auth/OwnableRoles.sol";
-import {ECDSA} from "@solady/src/utils/ECDSA.sol";
-import {ERC2981} from "@solady/src/tokens/ERC2981.sol";
-import {AccessRoles} from "./access/AccessRoles.sol";
-import {IAccessRegistry} from "./interfaces/IAccessRegistry.sol";
-import {IAdventurer} from "./interfaces/IAdventurer.sol";
-import {IERC4906} from "./interfaces/IERC4906.sol";
-import {Characters} from "./types/DataTypes.sol";
+import { IERC721AUpgradeable } from "@erc721a-upgradeable/interfaces/IERC721AUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OwnableRoles } from "@solady/src/auth/OwnableRoles.sol";
+import { ECDSA } from "@solady/src/utils/ECDSA.sol";
+import { ERC2981 } from "@solady/src/tokens/ERC2981.sol";
+import { AccessRoles } from "./access/AccessRoles.sol";
+import { IAccessRegistry } from "./interfaces/IAccessRegistry.sol";
+import { IAdventurer } from "./interfaces/IAdventurer.sol";
+import { IERC4906 } from "./interfaces/IERC4906.sol";
+import { Characters } from "./types/DataTypes.sol";
 
 /**
  * @title Adventurer
@@ -76,14 +76,18 @@ contract Adventurer is
         address _signer,
         address _accessRegistry,
         string memory _baseTokenURI
-    ) external initializerERC721A initializer {
+    )
+        external
+        initializerERC721A
+        initializer
+    {
         if (_owner == address(0) || _admin == address(0) || _signer == address(0) || _accessRegistry == address(0)) {
             revert ZeroAddressInvalid();
         }
 
-        __ERC721A_init({name_: "Adventurer", symbol_: "ADVNT"});
-        _initializeOwner({newOwner: _owner});
-        _grantRoles({user: _admin, roles: AccessRoles.ADMIN_ROLE});
+        __ERC721A_init({ name_: "Adventurer", symbol_: "ADVNT" });
+        _initializeOwner({ newOwner: _owner });
+        _grantRoles({ user: _admin, roles: AccessRoles.ADMIN_ROLE });
 
         signer = _signer;
         accessRegistry = IAccessRegistry(_accessRegistry);
@@ -94,15 +98,19 @@ contract Adventurer is
     /**
      * @inheritdoc IAdventurer
      */
-    function claimAdventurer(bytes32 profileId, Characters character, bytes calldata signature)
+    function claimAdventurer(
+        bytes32 profileId,
+        Characters character,
+        bytes calldata signature
+    )
         external
         checkClaimState(ClaimState.ACTIVE)
     {
-        IAccessRegistry.AccessType accountAccessType = accessRegistry.accessType({account: msg.sender});
+        IAccessRegistry.AccessType accountAccessType = accessRegistry.accessType({ account: msg.sender });
         if (accountAccessType == IAccessRegistry.AccessType.BLOCKED) revert InvalidAccessType();
 
         if (profileClaimed[profileId]) revert ProfileHasClaimed();
-        if (_getAux({owner: msg.sender}) == 1) revert AccountHasClaimed();
+        if (_getAux({ owner: msg.sender }) == 1) revert AccountHasClaimed();
         if (character == Characters.UNDEFINED) revert UndefinedCharacterType();
 
         if (charactersLeft[character] == 0) revert CharacterSupplyExhausted();
@@ -111,19 +119,22 @@ contract Adventurer is
         bytes32 digest = keccak256(abi.encodePacked(msg.sender, profileId, character)).toEthSignedMessageHash();
         if (signer != digest.recover(signature)) revert SignerMismatch();
 
-        _setAux({owner: msg.sender, aux: 1});
+        _setAux({ owner: msg.sender, aux: 1 });
         profileClaimed[profileId] = true;
         characterType[_nextTokenId()] = character;
 
-        _mint({to: msg.sender, quantity: 1});
+        _mint({ to: msg.sender, quantity: 1 });
 
-        emit AdventurerClaimed({account: msg.sender, profileId: profileId, character: character});
+        emit AdventurerClaimed({ account: msg.sender, profileId: profileId, character: character });
     }
 
     /**
      * @inheritdoc IAdventurer
      */
-    function transformAdventurer(uint256 tokenId, bytes calldata signature)
+    function transformAdventurer(
+        uint256 tokenId,
+        bytes calldata signature
+    )
         external
         checkClaimState(ClaimState.ACTIVE)
     {
@@ -135,19 +146,23 @@ contract Adventurer is
 
         // Reset the state for the provided adventurer token.
         characterType[tokenId] = Characters.UNDEFINED;
-        _burn({tokenId: tokenId, approvalCheck: false});
+        _burn({ tokenId: tokenId, approvalCheck: false });
 
         uint256 newTokenId = _nextTokenId();
         characterType[newTokenId] = Characters.RISKUS;
-        _mint({to: msg.sender, quantity: 1});
+        _mint({ to: msg.sender, quantity: 1 });
 
-        emit AdventurerTransformed({account: msg.sender, burntTokenId: tokenId, transformedId: newTokenId});
+        emit AdventurerTransformed({ account: msg.sender, burntTokenId: tokenId, transformedId: newTokenId });
     }
 
     /**
      * @inheritdoc IAdventurer
      */
-    function treasuryMint(Characters character, uint256 amount, address receiver)
+    function treasuryMint(
+        Characters character,
+        uint256 amount,
+        address receiver
+    )
         external
         onlyRoles(AccessRoles.ADMIN_ROLE)
     {
@@ -163,13 +178,16 @@ contract Adventurer is
             characterType[i + startTokenId] = character;
         }
 
-        _mint({to: receiver, quantity: amount});
+        _mint({ to: receiver, quantity: amount });
     }
 
     /**
      * @inheritdoc IAdventurer
      */
-    function setCharacterSupply(Characters[] calldata characters, uint256[] calldata amounts)
+    function setCharacterSupply(
+        Characters[] calldata characters,
+        uint256[] calldata amounts
+    )
         external
         onlyRoles(AccessRoles.ADMIN_ROLE)
     {
@@ -185,7 +203,7 @@ contract Adventurer is
      * @inheritdoc IAdventurer
      */
     function updateMetadata() external onlyRoles(AccessRoles.ADMIN_ROLE) {
-        emit BatchMetadataUpdate({_fromTokenId: _startTokenId(), _toTokenId: _totalMinted()});
+        emit BatchMetadataUpdate({ _fromTokenId: _startTokenId(), _toTokenId: _totalMinted() });
     }
 
     /**
@@ -228,7 +246,7 @@ contract Adventurer is
     function toggleClaimState() external onlyRoles(AccessRoles.ADMIN_ROLE) {
         ClaimState oldClaimState = claimState;
         claimState = claimState == ClaimState.CLOSED ? ClaimState.ACTIVE : ClaimState.CLOSED;
-        emit ClaimStateUpdated({oldClaimState: oldClaimState, newClaimState: claimState});
+        emit ClaimStateUpdated({ oldClaimState: oldClaimState, newClaimState: claimState });
     }
 
     /**
@@ -256,7 +274,11 @@ contract Adventurer is
         _deleteDefaultRoyalty();
     }
 
-    function setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeNumerator)
+    function setTokenRoyalty(
+        uint256 tokenId,
+        address receiver,
+        uint96 feeNumerator
+    )
         external
         onlyRoles(AccessRoles.ADMIN_ROLE)
     {
@@ -297,5 +319,5 @@ contract Adventurer is
     /*                       UUPSUPGRADEABLE                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _authorizeUpgrade(address) internal override onlyRoles(AccessRoles.ADMIN_ROLE) {}
+    function _authorizeUpgrade(address) internal override onlyRoles(AccessRoles.ADMIN_ROLE) { }
 }

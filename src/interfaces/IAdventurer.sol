@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {IAccessRegistry} from "./IAccessRegistry.sol";
-import {Characters} from "../types/DataTypes.sol";
+import { IAccessRegistry } from "./IAccessRegistry.sol";
+import { Characters } from "../types/DataTypes.sol";
 
 /**
  * @title IAdventurer
@@ -156,7 +156,8 @@ interface IAdventurer {
         address _signer,
         address _accessRegistry,
         string memory _baseTokenURI
-    ) external;
+    )
+        external;
 
     /**
      * Function used to claim an adventurer.

@@ -4,11 +4,11 @@ pragma solidity 0.8.20;
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {IAccessRegistry} from "../src/interfaces/IAccessRegistry.sol";
-import {IAdventurer} from "../src/interfaces/IAdventurer.sol";
-import {Adventurer} from "../src/Adventurer.sol";
-import {Characters} from "../src/types/DataTypes.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { IAccessRegistry } from "../src/interfaces/IAccessRegistry.sol";
+import { IAdventurer } from "../src/interfaces/IAdventurer.sol";
+import { Adventurer } from "../src/Adventurer.sol";
+import { Characters } from "../src/types/DataTypes.sol";
 
 abstract contract Base is Script, Test {
     /// Core contracts.
