@@ -161,7 +161,7 @@ contract AdventurerTest is BaseTest {
 
         uint256 oldCharacterSupply = adventurer.charactersLeft(character);
 
-        hoax(users.alice.addr);
+        vm.prank(users.alice.addr);
         vm.expectEmit({ checkTopic1: true, checkTopic2: true, checkTopic3: false, checkData: true });
         emit AdventurerClaimed({ account: users.alice.addr, profileId: profileId, character: character });
         adventurer.claimAdventurer(profileId, character, signature);
@@ -176,7 +176,7 @@ contract AdventurerTest is BaseTest {
         Characters character = Characters(bound(characterId, 1, 13));
         bytes memory signature = getClaimSignature(users.eve.addr, profileId, character);
 
-        hoax(users.eve.addr);
+        vm.prank(users.eve.addr);
         vm.expectRevert(IAdventurer.InvalidClaimState.selector);
         adventurer.claimAdventurer(profileId, character, signature);
     }
@@ -188,7 +188,7 @@ contract AdventurerTest is BaseTest {
         Characters character = Characters(bound(characterId, 1, 13));
         bytes memory signature = getClaimSignature(users.eve.addr, profileId, character);
 
-        hoax(users.eve.addr);
+        vm.prank(users.eve.addr);
         vm.expectRevert(IAdventurer.InvalidAccessType.selector);
         adventurer.claimAdventurer(profileId, character, signature);
     }
@@ -200,7 +200,7 @@ contract AdventurerTest is BaseTest {
         Characters character = Characters(bound(characterId, 1, 13));
         bytes memory signature = getClaimSignature(users.alice.addr, profileId, character);
 
-        startHoax(users.alice.addr);
+        vm.startPrank(users.alice.addr);
         adventurer.claimAdventurer(profileId, character, signature);
         vm.expectRevert(IAdventurer.ProfileHasClaimed.selector);
         adventurer.claimAdventurer(profileId, character, signature);
@@ -213,7 +213,7 @@ contract AdventurerTest is BaseTest {
         Characters character = Characters(bound(characterId, 1, 13));
         bytes memory signature = getClaimSignature(users.alice.addr, profileId, character);
 
-        startHoax(users.alice.addr);
+        vm.startPrank(users.alice.addr);
         adventurer.claimAdventurer(profileId, character, signature);
 
         profileId = keccak256(abi.encodePacked(profileId));
@@ -232,7 +232,7 @@ contract AdventurerTest is BaseTest {
             character: Characters.UNDEFINED
         });
 
-        hoax(users.alice.addr);
+        vm.prank(users.alice.addr);
         vm.expectRevert(IAdventurer.UndefinedCharacterType.selector);
         adventurer.claimAdventurer(profileId, Characters.UNDEFINED, signature);
     }
@@ -241,14 +241,14 @@ contract AdventurerTest is BaseTest {
         Characters character = Characters.LOCKIANI;
         uint256 amount = adventurer.charactersLeft(character);
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         adventurer.treasuryMint(character, amount, users.treasury.addr);
 
         bytes32 profileId = keccak256(abi.encodePacked("test.profile"));
         bytes memory signature = getClaimSignature(users.alice.addr, profileId, character);
 
 
-        hoax(users.alice.addr);
+        vm.prank(users.alice.addr);
         vm.expectRevert(IAdventurer.CharacterSupplyExhausted.selector);
         adventurer.claimAdventurer(profileId, character, signature);
     }
@@ -260,7 +260,7 @@ contract AdventurerTest is BaseTest {
         Characters character = Characters(bound(characterId, 1, 13));
         bytes memory signature = getClaimSignature(users.bob.addr, profileId, character);
 
-        hoax(users.alice.addr);
+        vm.prank(users.alice.addr);
         vm.expectRevert(IAdventurer.SignerMismatch.selector);
         adventurer.claimAdventurer(profileId, character, signature);
     }
@@ -273,7 +273,7 @@ contract AdventurerTest is BaseTest {
     ) public initializeClaim {
         Characters character = Characters(bound(characterId, 1, 13));
 
-        startHoax(users.alice.addr);
+        vm.startPrank(users.alice.addr);
         adventurer.claimAdventurer({
             profileId: profileId,
             character: character,
@@ -300,13 +300,13 @@ contract AdventurerTest is BaseTest {
     }
 
     function testCannot_TransformAdventurer_InvalidClaimState() public {
-        hoax(users.alice.addr);
+        vm.prank(users.alice.addr);
         vm.expectRevert(IAdventurer.InvalidClaimState.selector);
         adventurer.transformAdventurer({ tokenId: 0, signature: "" });
     }
 
     function testCannot_TransformAdventurer_NonExistentTokenId_Fuzzed(uint256 randId) public initializeClaim {
-        hoax(users.alice.addr);
+        vm.prank(users.alice.addr);
         vm.expectRevert(IAdventurer.NonExistentTokenId.selector);
         adventurer.transformAdventurer({ tokenId: randId, signature: "" });
     }
@@ -319,7 +319,7 @@ contract AdventurerTest is BaseTest {
         Characters character = Characters(bound(characterId, 1, 13));
         vm.assume(nonOwner != users.alice.addr);
 
-        startHoax(users.alice.addr);
+        vm.startPrank(users.alice.addr);
         adventurer.claimAdventurer({
             profileId: profileId,
             character: character,
@@ -327,7 +327,7 @@ contract AdventurerTest is BaseTest {
         });
         vm.stopPrank();
 
-        hoax(users.eve.addr);
+        vm.prank(users.eve.addr);
         vm.expectRevert(IAdventurer.CallerNotOwner.selector);
         adventurer.transformAdventurer({ tokenId: 1, signature: "" });
     }
@@ -338,7 +338,7 @@ contract AdventurerTest is BaseTest {
     ) public initializeClaim {
         Characters character = Characters(bound(characterId, 1, 13));
 
-        startHoax(users.alice.addr);
+        vm.startPrank(users.alice.addr);
         adventurer.claimAdventurer({
             profileId: profileId,
             character: character,
@@ -363,7 +363,7 @@ contract AdventurerTest is BaseTest {
             emit CharacterSupplyUpdated({ character: characters[i], amount: amounts[i] });
         }
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         adventurer.setCharacterSupply(characters, amounts);
 
         for (uint256 i = 0; i < characters.length; i++) {
@@ -375,7 +375,7 @@ contract AdventurerTest is BaseTest {
         (Characters[] memory characters, uint256[] memory amounts) = loadSupplyFromJSON();
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.setCharacterSupply(characters, amounts);
     }
@@ -385,13 +385,13 @@ contract AdventurerTest is BaseTest {
         b = bound(b, 1, 32);
         vm.assume(a != b);
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectRevert(IAdventurer.ArrayLengthMismatch.selector);
         adventurer.setCharacterSupply({ characters: new Characters[](a), amounts: new uint256[](b) });
     }
 
     function testCannot_SetCharacterSupply_ZeroLengthArray() public {
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectRevert(IAdventurer.ZeroLengthArray.selector);
         adventurer.setCharacterSupply({ characters: new Characters[](0), amounts: new uint256[](0) });
     }
@@ -402,7 +402,7 @@ contract AdventurerTest is BaseTest {
         (Characters[] memory characters, uint256[] memory amounts) = loadSupplyFromJSON();
         characters[idx] = Characters.UNDEFINED;
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectRevert(IAdventurer.UndefinedCharacterType.selector);
         adventurer.setCharacterSupply(characters, amounts);
     }
@@ -413,7 +413,7 @@ contract AdventurerTest is BaseTest {
         characterId = bound(characterId, 1, 13);
         mintAmount = bound(mintAmount, 1, 50);
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         adventurer.treasuryMint({
             character: Characters(characterId),
             amount: mintAmount,
@@ -431,19 +431,19 @@ contract AdventurerTest is BaseTest {
     function testCannot_TreasuryMint_Unauthorized_Fuzzed(address nonGameMaster) public initializeClaim {
         vm.assume(nonGameMaster != users.admin.addr);
 
-        hoax(nonGameMaster);
+        vm.prank(nonGameMaster);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.treasuryMint({ character: Characters.CYPHERON, amount: 1, receiver: nonGameMaster });
     }
 
     function testCannot_TreasuryMint_UndefinedCharacterType() public initializeClaim {
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectRevert(IAdventurer.UndefinedCharacterType.selector);
         adventurer.treasuryMint({ character: Characters.UNDEFINED, amount: 1, receiver: users.treasury.addr });
     }
 
     function testCannot_TreasuryMint_ZeroAddressInvalid() public initializeClaim {
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectRevert(IAdventurer.ZeroAddressInvalid.selector);
         adventurer.treasuryMint({ character: Characters.CHRONOSIA, amount: 1, receiver: address(0) });
     }
@@ -452,7 +452,7 @@ contract AdventurerTest is BaseTest {
         Characters character = Characters(bound(characterId, 1, 13));
         uint256 mintAmount = adventurer.charactersLeft(character) + 1;
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectRevert(IAdventurer.AmountOverSupply.selector);
         adventurer.treasuryMint({ character: character, amount: mintAmount, receiver: users.treasury.addr });
     }
@@ -460,14 +460,14 @@ contract AdventurerTest is BaseTest {
     /* `updateMetadata()` Tests */
 
     function test_UpdateMetadata() public {
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         adventurer.updateMetadata();
     }
 
     function testCannot_UpdateMetadata_Unauthorized_Fuzzed(address nonAdmin) public {
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.updateMetadata();
     }
@@ -478,7 +478,7 @@ contract AdventurerTest is BaseTest {
         vm.assume(newSigner != address(0));
         address oldSigner = adventurer.signer();
         
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectEmit({ checkTopic1: true, checkTopic2: true, checkTopic3: false, checkData: true });
         emit SignerUpdated(oldSigner, newSigner);
         adventurer.setSigner(newSigner);
@@ -489,13 +489,13 @@ contract AdventurerTest is BaseTest {
     function testCannot_SetSigner_Unauthorized_Fuzzed(address nonAdmin) public {
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.setSigner({ newSigner: nonAdmin });
     }
 
     function testCannot_SetSigner_ZeroAddressInvalid() public {
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectRevert(IAdventurer.ZeroAddressInvalid.selector);
         adventurer.setSigner({ newSigner: address(0) });
     }
@@ -506,7 +506,7 @@ contract AdventurerTest is BaseTest {
         vm.assume(address(newAccessRegistry) != address(0));
         IAccessRegistry oldAccessRegistry = adventurer.accessRegistry();
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectEmit({ checkTopic1: true, checkTopic2: true, checkTopic3: false, checkData: true });
         emit AccessRegistryUpdated(oldAccessRegistry, newAccessRegistry);
         adventurer.setAccessRegistry(newAccessRegistry);
@@ -517,13 +517,13 @@ contract AdventurerTest is BaseTest {
     function testCannot_SetAccessRegistry_Unauthorized(address nonAdmin) public {
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.setAccessRegistry({ newAccessRegistry: IAccessRegistry(nonAdmin) });
     }
 
     function testCannot_SetAccessRegistry_ZeroAddressInvalid() public {
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectRevert(IAdventurer.ZeroAddressInvalid.selector);
         adventurer.setAccessRegistry({ newAccessRegistry: IAccessRegistry(address(0)) });
     }
@@ -531,7 +531,7 @@ contract AdventurerTest is BaseTest {
     /* `setBaseTokenURI()` Tests */
 
     function test_SetBaseTokenURI_Fuzzed(string memory newBaseTokenURI) public {
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectEmit({ checkTopic1: false, checkTopic2: false, checkTopic3: false, checkData: true });
         emit BaseTokenURIUpdated({ oldBaseTokenURI: baseTokenURI, newBaseTokenURI: newBaseTokenURI });
         adventurer.setBaseTokenURI(newBaseTokenURI);
@@ -540,9 +540,29 @@ contract AdventurerTest is BaseTest {
     function testCannot_SetBaseTokenURI_Unauthorized_Fuzzed(address nonAdmin) public {
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.setBaseTokenURI({ newBaseTokenURI: "" });
+    }
+
+    /* `tokenURI()` Tests */
+
+    function test_TokenURI() public initializeClaim {
+        bytes32 profileId = bytes32(0x00);
+        bytes memory signature = getClaimSignature({
+            account: users.alice.addr,
+            profileId: profileId,
+            character: Characters.COINDRA
+        });
+
+        vm.prank(users.alice.addr);
+        adventurer.claimAdventurer(profileId, Characters.COINDRA, signature);
+
+        string memory uri = "https://api.segmint.io/adventurers/";
+
+        vm.startPrank(users.admin.addr);
+        adventurer.setBaseTokenURI({ newBaseTokenURI: uri });
+        assertEq(adventurer.tokenURI({ tokenId: 1 }), string.concat(uri, "1"));
     }
 
     /* `toggleClaimState()` Tests */
@@ -551,7 +571,7 @@ contract AdventurerTest is BaseTest {
         IAdventurer.ClaimState oldClaimState = adventurer.claimState();
         IAdventurer.ClaimState newClaimState = IAdventurer.ClaimState.ACTIVE;
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         vm.expectEmit({ checkTopic1: false, checkTopic2: false, checkTopic3: false, checkData: true });
         emit ClaimStateUpdated(oldClaimState, newClaimState);
         adventurer.toggleClaimState();
@@ -562,7 +582,7 @@ contract AdventurerTest is BaseTest {
     function testCannot_ToggleClaimState_Unauthorized_Fuzzed(address nonAdmin) public {
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.toggleClaimState();
     }
@@ -587,7 +607,7 @@ contract AdventurerTest is BaseTest {
         salePrice = bound(salePrice, 0 wei, 10 ether);
         uint256 expectedFee = salePrice * feeNumerator / 10_000;
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         adventurer.setDefaultRoyalty({ receiver: randAddr, feeNumerator: uint96(feeNumerator) });
 
         (address receiver, uint256 royaltyFee) = adventurer.royaltyInfo({ tokenId: 1, salePrice: salePrice });
@@ -598,7 +618,7 @@ contract AdventurerTest is BaseTest {
     function testCannot_SetDefaultyRoyalty_Unauthorized_Fuzzed(address nonAdmin) public {
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.setDefaultRoyalty({ receiver: nonAdmin, feeNumerator: 10_000 });
     }
@@ -613,7 +633,7 @@ contract AdventurerTest is BaseTest {
         salePrice = bound(salePrice, 0 wei, 10 ether);
         uint256 expectedFee = salePrice * feeNumerator / 10_000;
 
-        startHoax(users.admin.addr);
+        vm.startPrank(users.admin.addr);
         adventurer.setDefaultRoyalty({ receiver: randAddr, feeNumerator: uint96(feeNumerator) });
 
         (address receiver, uint256 royaltyFee) = adventurer.royaltyInfo({ tokenId: 1, salePrice: salePrice });
@@ -629,7 +649,7 @@ contract AdventurerTest is BaseTest {
     function testCannot_DeleteDefaultRoyalty_Unauthorized_Fuzzed(address nonAdmin) public {
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.deleteDefaultRoyalty();
     }
@@ -645,7 +665,7 @@ contract AdventurerTest is BaseTest {
         salePrice = bound(salePrice, 0 wei, 10 ether);
         uint256 expectedFee = salePrice * feeNumerator / 10_000;
 
-        hoax(users.admin.addr);
+        vm.prank(users.admin.addr);
         adventurer.setTokenRoyalty({ tokenId: tokenId, receiver: randAddr, feeNumerator: uint96(feeNumerator) });
 
         (address receiver, uint256 royaltyFee) = adventurer.royaltyInfo({ tokenId: tokenId, salePrice: salePrice });
@@ -656,7 +676,7 @@ contract AdventurerTest is BaseTest {
     function testCannot_SetTokenRoyalty_Unauthorized_Fuzzed(address nonAdmin) public {
         vm.assume(nonAdmin != users.admin.addr);
 
-        hoax(nonAdmin);
+        vm.prank(nonAdmin);
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.setTokenRoyalty({ tokenId: 1, receiver: nonAdmin, feeNumerator: uint96(5_000) });
     }
@@ -672,7 +692,7 @@ contract AdventurerTest is BaseTest {
         salePrice = bound(salePrice, 0 wei, 10 ether);
         uint256 expectedFee = salePrice * feeNumerator / 10_000;
 
-        startHoax(users.admin.addr);
+        vm.startPrank(users.admin.addr);
         adventurer.setTokenRoyalty({ tokenId: tokenId, receiver: randAddr, feeNumerator: uint96(feeNumerator) });
 
         (address receiver, uint256 royaltyFee) = adventurer.royaltyInfo({ tokenId: tokenId, salePrice: salePrice });
@@ -709,7 +729,7 @@ contract AdventurerTest is BaseTest {
 
     function _initializeClaim() internal {
         (Characters[] memory characters, uint256[] memory amounts) = loadSupplyFromJSON();
-        startHoax(users.admin.addr);
+        vm.startPrank(users.admin.addr);
         adventurer.setCharacterSupply(characters, amounts);
         adventurer.toggleClaimState();
         vm.stopPrank();
