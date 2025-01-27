@@ -11,14 +11,14 @@ contract MintRemainderConcreteTest is BaseTest {
     }
 
     modifier whenCallerIsAdmin() {
+        vm.startPrank({ msgSender: users.admin });
         _;
     }
 
     function test_WhenRemainderIsGreaterThanMaxBatchSize() external whenCallerIsAdmin {
-        vm.expectEmit();
-        // it should mint tokens in batches of max size
-        // it should mint remaining tokens in final batch
-        vm.skip(true);
+        uint256 totalSupply = adventurer.TOTAL_SUPPLY();
+        adventurer.mintRemainder({ receiver: users.treasury });
+        assertEq(adventurer.balanceOf({ owner: users.treasury }), totalSupply);
     }
 
     function test_WhenRemainderIsLessThanOrEqualToMaxBatchSize() external whenCallerIsAdmin {
