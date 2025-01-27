@@ -1,0 +1,6 @@
+SetBaseTokenURIConcreteTest
+├── when caller is not admin
+│   └── it should revert
+└── when caller is admin
+    ├── it should update the base token URI
+    └── it should emit BaseTokenURIUpdated event 

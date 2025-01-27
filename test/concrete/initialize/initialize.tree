@@ -1,0 +1,19 @@
+InitializeConcreteTest
+├── when the contract is already initialized
+│   └── it should revert
+└── when the contract is not initialized
+    ├── when the owner is the zero address
+    │   └── it should revert
+    └── when the owner is not the zero address
+        ├── when the admin is the zero address
+        │   └── it should revert
+        └── when the admin is not the zero address
+            ├── when the signer is the zero address
+            │   └── it should revert
+            └── when the signer is not the zero address
+                ├── it should set the name and symbol
+                ├── it should set the owner
+                ├── it should grant the admin the admin role
+                ├── it should set the base token URI
+                ├── it should mint the treasury allocation
+                └── it should initialize the contract

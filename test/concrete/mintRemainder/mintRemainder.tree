@@ -1,0 +1,9 @@
+MintRemainderConcreteTest
+├── when caller is not admin
+│   └── it should revert
+└── when caller is admin
+    ├── when remainder is greater than max batch size
+    │   ├── it should mint tokens in batches of max size
+    │   └── it should mint remaining tokens in final batch
+    └── when remainder is less than or equal to max batch size
+        └── it should mint all remaining tokens in one batch 

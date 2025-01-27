@@ -1,0 +1,5 @@
+ResetTokenRoyaltyConcreteTest
+├── when caller is not admin
+│   └── it should revert
+└── when caller is admin
+    └── it should reset the token royalty 

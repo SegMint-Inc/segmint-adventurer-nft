@@ -1,0 +1,5 @@
+UpdateMetadataConcreteTest
+├── when caller is not admin
+│   └── it should revert
+└── when caller is admin
+    └── it should emit BatchMetadataUpdate event 

@@ -4,16 +4,18 @@ pragma solidity 0.8.20;
 import { Vm } from "forge-std/Vm.sol";
 
 struct Users {
-    /// Admin wallet
-    Vm.Wallet admin;
-    /// Signer wallet
+    /// Owner
+    address payable owner;
+    /// Admin
+    address payable admin;
+    /// Treasury
+    address payable treasury;
+    /// Standard User
+    address payable alice;
+    /// Standard User
+    address payable bob;
+    /// Malicious User
+    address payable eve;
+    /// Signer
     Vm.Wallet signer;
-    /// Treasury wallet
-    Vm.Wallet treasury;
-    /// Standard wallet
-    Vm.Wallet alice;
-    /// Standard wallet
-    Vm.Wallet bob;
-    /// Malicious user
-    Vm.Wallet eve;
 }

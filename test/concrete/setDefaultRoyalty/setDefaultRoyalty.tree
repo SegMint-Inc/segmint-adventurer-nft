@@ -1,0 +1,5 @@
+SetDefaultRoyaltyConcreteTest
+├── when caller is not admin
+│   └── it should revert
+└── when caller is admin
+    └── it should set the default royalty 

@@ -7,19 +7,15 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Ownable } from "@solady/src/auth/Ownable.sol";
 import { ECDSA } from "@solady/src/utils/ECDSA.sol";
-
+import { Constants } from "./utils/Constants.sol";
 import { Assertions } from "./utils/Assertions.sol";
 import { Events } from "./utils/Events.sol";
 import { Users } from "./utils/Users.sol";
 
 import { AccessRoles } from "../src/access/AccessRoles.sol";
-import { IERC4906 } from "../src/interfaces/IERC4906.sol";
 
-abstract contract BaseTest is Base, Assertions, Events {
-    using stdStorage for StdStorage;
-    using stdJson for string;
-
-    string private jsonSupply;
+abstract contract BaseTest is Base, Constants, Assertions, Events {
+    using ECDSA for bytes32;
 
     Users public users;
 
@@ -30,31 +26,13 @@ abstract contract BaseTest is Base, Assertions, Events {
     }
 
     function _setUpBefore() internal {
-        /// Create user wallets to be used in testing.
         createUsers();
 
-        /// Assign state variables.
-        owner = address(this);
-        admin = users.admin.addr;
+        owner = users.owner;
+        admin = users.admin;
         signer = users.signer.addr;
+        treasury = users.treasury;
         baseTokenURI = "https://www.segmint.io/api/adventurers/";
-
-        string memory root = vm.projectRoot();
-        string memory basePath = string.concat(root, "/test/utils/");
-        string memory path = string.concat(basePath, "accessRegistry.json");
-        string memory jsonFile = vm.readFile(path);
-
-        /// Etch Access Registry code into specified address.
-        accessRegistry = abi.decode(vm.parseJson({ json: jsonFile, key: ".address" }), (IAccessRegistry));
-        bytes memory registryCode = abi.decode(vm.parseJson({ json: jsonFile, key: ".code" }), (bytes));
-        vm.etch({ target: address(accessRegistry), newRuntimeBytecode: registryCode });
-
-        basePath = string.concat(root, "/data/");
-        path = string.concat(basePath, "CharacterSupply.json");
-        jsonSupply = vm.readFile(path);
-
-        /// Grant registry access to Alice and Bob.
-        grantRegistryAccess();
     }
 
     function _setUpAfter() internal {
@@ -65,52 +43,35 @@ abstract contract BaseTest is Base, Assertions, Events {
     }
 
     /**
-     * Helper function used to create users for testing purposes.
+     * Helper function used to create users.
      */
     function createUsers() internal {
-        users.admin = vm.createWallet({ walletLabel: "test.admin" });
-        vm.label({ account: users.admin.addr, newLabel: "Admin" });
-
-        users.signer = vm.createWallet({ walletLabel: "test.signer" });
-        vm.label({ account: users.signer.addr, newLabel: "Signer" });
-
-        users.treasury = vm.createWallet({ walletLabel: "test.treasury" });
-        vm.label({ account: users.treasury.addr, newLabel: "Treasury" });
-
-        users.alice = vm.createWallet({ walletLabel: "test.alice" });
-        vm.label({ account: users.alice.addr, newLabel: "Alice (Standard User)" });
-
-        users.bob = vm.createWallet({ walletLabel: "test.bob" });
-        vm.label({ account: users.bob.addr, newLabel: "Bob (Standard User)" });
-
-        users.eve = vm.createWallet({ walletLabel: "test.eve" });
-        vm.label({ account: users.eve.addr, newLabel: "Eve (Malicious User)" });
+        users.owner = createUser({ name: "Owner" });
+        users.admin = createUser({ name: "Admin" });
+        users.treasury = createUser({ name: "Treasury" });
+        users.alice = createUser({ name: "Alice" });
+        users.bob = createUser({ name: "Bob" });
+        users.eve = createUser({ name: "Eve" });
+        users.signer = vm.createWallet({ walletLabel: "Signer" });
     }
 
     /**
-     * Helper function used to set access types for Alice and Bob.
+     * Helper function used to create a user.
      */
-    function grantRegistryAccess() internal {
-        stdstore.target(address(accessRegistry)).sig(IAccessRegistry.accessType.selector).with_key(users.alice.addr)
-            .checked_write(uint256(IAccessRegistry.AccessType.RESTRICTED));
-
-        stdstore.target(address(accessRegistry)).sig(IAccessRegistry.accessType.selector).with_key(users.bob.addr)
-            .checked_write(uint256(IAccessRegistry.AccessType.UNRESTRICTED));
+    function createUser(string memory name) internal returns (address payable) {
+        address user = vm.createWallet({ walletLabel: name }).addr;
+        vm.label({ account: user, newLabel: name });
+        vm.deal({ account: user, newBalance: DEFAULT_ETH_BALANCE });
+        assertEq(user.balance, DEFAULT_ETH_BALANCE);
+        return payable(user);
     }
 
     /**
-     * Helper function to parse adventurer supply from JSON.
+     * Helper function used to get a mint signature.
      */
-    function loadSupplyFromJSON() internal view returns (Characters[] memory characters, uint256[] memory amounts) {
-        uint256 length = 13;
-
-        characters = new Characters[](length);
-        amounts = new uint256[](length);
-
-        for (uint256 i = 0; i < characters.length; i++) {
-            characters[i] = Characters(i + 1);
-            amounts[i] =
-                abi.decode(vm.parseJson(jsonSupply, string(abi.encodePacked(".", vm.toString(i + 1)))), (uint256));
-        }
+    function getMintSignature(address account) public view returns (bytes memory) {
+        bytes32 digest = keccak256(abi.encodePacked(account)).toEthSignedMessageHash();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign({ privateKey: users.signer.privateKey, digest: digest });
+        return abi.encodePacked(r, s, v);
     }
 }

@@ -1,0 +1,10 @@
+ToggleMintConcreteTest
+├── when caller is not admin
+│   └── it should revert
+└── when caller is admin
+    ├── when mint is inactive
+    │   ├── it should set mintable to true
+    │   └── it should emit MintStateUpdated event
+    └── when mint is active
+        ├── it should set mintable to false
+        └── it should emit MintStateUpdated event 

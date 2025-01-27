@@ -1,0 +1,13 @@
+MintConcreteTest
+├── when mint is inactive
+│   └── it should revert
+└── when mint is active
+    ├── when the account has already claimed
+    │   └── it should revert
+    └── when the account has not claimed
+        ├── when the signature is invalid
+        │   └── it should revert
+        └── when the signature is valid
+            ├── it should set the account's aux value to 1
+            ├── it should mint one token to the caller
+            └── it should increment the total supply
