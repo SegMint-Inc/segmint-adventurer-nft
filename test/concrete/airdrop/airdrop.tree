@@ -2,16 +2,12 @@ AirdropConcreteTest
 ├── when caller is not admin
 │   └── it should revert
 └── when caller is admin
-    ├── when accounts array is empty
+    ├── when accounts array is zero length
     │   └── it should revert
-    ├── when accounts length does not match the airdrop allocation
-    │   └── it should revert
-    ├── when airdrop is already complete
-    │   └── it should revert
-    └── when airdrop conditions are valid
-        ├── when an account in array has already claimed
+    └── when accounts array is non zero length
+        ├── when an account in the array has already claimed
         │   └── it should revert
-        └── when no accounts have claimed
+        └── when no accounts in the array have claimed
             ├── it should set airdropped to true
             ├── it should set aux value to 1 for each account
             ├── it should mint one token to each account
