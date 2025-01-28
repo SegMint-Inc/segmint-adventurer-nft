@@ -29,15 +29,14 @@ contract Adventurer is
 {
     using ECDSA for bytes32;
 
-    uint256 public constant TOTAL_SUPPLY = 7000;
-    uint256 public constant AIRDROP_ALLOCATION = 200;
+    uint256 public constant MAX_TOKENS = 7000;
     uint256 public constant TREASURY_ALLOCATION = 550;
 
-    string private __baseTokenURI;
-    address public signer;
+    /// @dev Base token URI for the collection.
+    string public baseTokenURI;
 
-    /// @dev Flag indicating if the airdrop is complete.
-    bool public airdropped;
+    /// @dev Address of the signer used to verify mint signatures.
+    address public signer;
 
     /// @dev Flag indicating if the mint is active.
     bool public mintable;
@@ -63,7 +62,7 @@ contract Adventurer is
         initializerERC721A
         initializer
     {
-        /// @dev No zero check for `_treasury` as `_mintERC2309` will revert if the `to` address is zero.
+        /// @dev No zero check for `_treasury` as `_mint` will revert if the `to` address is zero.
         if (_owner == address(0) || _admin == address(0) || _signer == address(0)) revert ZeroAddress();
 
         __ERC721A_init({ name_: "Abstract Adventurers", symbol_: "ADVNT" });
@@ -71,12 +70,12 @@ contract Adventurer is
         _grantRoles({ user: _admin, roles: AccessRoles.ADMIN_ROLE });
 
         signer = _signer;
-        __baseTokenURI = _baseTokenURI;
+        baseTokenURI = _baseTokenURI;
 
         uint256 batchSize = 50;
         uint256 batchCount = TREASURY_ALLOCATION / batchSize;
 
-        /// Mint treasury allocation in batches of 50 tokens to prevent potential gas issues.
+        /// Mint treasury allocation in batches of 50 tokens to prevent potential gas issues on later transfers.
         for (uint256 i = 0; i < batchCount; i++) {
             _mint({ to: _treasury, quantity: batchSize });
         }
@@ -87,11 +86,12 @@ contract Adventurer is
      */
     function mint(bytes calldata signature) external {
         if (!mintable) revert MintInactive();
+        if (_totalMinted() + 1 > MAX_TOKENS) revert MintExceedsTotalSupply();
         if (_getAux({ owner: msg.sender }) == 1) revert AccountHasClaimed();
         _setAux({ owner: msg.sender, aux: 1 });
 
         bytes32 digest = keccak256(abi.encodePacked(msg.sender)).toEthSignedMessageHash();
-        if (signer != digest.recover(signature)) revert SignerMismatch();
+        if (signer != digest.recoverCalldata(signature)) revert SignerMismatch();
 
         _mint({ to: msg.sender, quantity: 1 });
     }
@@ -101,14 +101,12 @@ contract Adventurer is
      */
     function airdrop(address[] calldata accounts) external onlyRoles(AccessRoles.ADMIN_ROLE) {
         if (accounts.length == 0) revert ZeroLengthArray();
-        if (accounts.length != AIRDROP_ALLOCATION) revert InvalidAirdropAmount();
-        if (airdropped) revert AirdropComplete();
-        airdropped = true;
+        if (_totalMinted() + accounts.length > MAX_TOKENS) revert MintExceedsTotalSupply();
 
         for (uint256 i = 0; i < accounts.length; i++) {
             address account = accounts[i];
 
-            /// @dev Sanity check to ensure the same `account` has not been provided more than once.
+            /// @dev Set auxiliary value to `1` so that airdropped accounts cannot participate in the mint.
             if (_getAux({ owner: account }) == 1) revert AccountHasClaimed();
             _setAux({ owner: account, aux: 1 });
 
@@ -119,9 +117,9 @@ contract Adventurer is
     /**
      * @inheritdoc IAdventurer
      */
-    function mintRemainder(address receiver) external onlyRoles(AccessRoles.ADMIN_ROLE) {
-        uint256 remainder = TOTAL_SUPPLY - _totalMinted();
-        _mint({ to: receiver, quantity: remainder });
+    function adminMint(address receiver, uint256 quantity) external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        if (_totalMinted() + quantity > MAX_TOKENS) revert MintExceedsTotalSupply();
+        _mint({ to: receiver, quantity: quantity });
     }
 
     /**
@@ -145,9 +143,8 @@ contract Adventurer is
      * @inheritdoc IAdventurer
      */
     function setBaseTokenURI(string calldata newBaseTokenURI) external onlyRoles(AccessRoles.ADMIN_ROLE) {
-        string memory oldBaseTokenURI = __baseTokenURI;
-        __baseTokenURI = newBaseTokenURI;
-
+        string memory oldBaseTokenURI = baseTokenURI;
+        baseTokenURI = newBaseTokenURI;
         emit BaseTokenURIUpdated(oldBaseTokenURI, newBaseTokenURI);
     }
 
@@ -157,7 +154,7 @@ contract Adventurer is
     function toggleMint() external onlyRoles(AccessRoles.ADMIN_ROLE) {
         bool oldFlag = mintable;
         mintable = !oldFlag;
-        emit MintStateUpdated({ oldMintState: oldFlag, newMintState: mintable });
+        emit MintStateUpdated({ oldMintState: oldFlag, newMintState: !oldFlag });
     }
 
     /**
@@ -176,8 +173,10 @@ contract Adventurer is
         override(ERC721AUpgradeable, IERC721AUpgradeable, ERC2981)
         returns (bool)
     {
-        return interfaceId == 0x49064906 // IERC4906
-            || ERC2981.supportsInterface(interfaceId) || super.supportsInterface(interfaceId);
+        /// forgefmt: disable-next-item
+        return interfaceId == 0x49064906
+            || ERC2981.supportsInterface(interfaceId)
+            || super.supportsInterface(interfaceId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -234,7 +233,7 @@ contract Adventurer is
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return __baseTokenURI;
+        return baseTokenURI;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

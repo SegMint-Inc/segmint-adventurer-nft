@@ -45,6 +45,11 @@ interface IAdventurer {
      */
     error MintInactive();
 
+    /**
+     * Thrown when the mint exceeds the total supply.
+     */
+    error MintExceedsTotalSupply();
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -107,8 +112,9 @@ interface IAdventurer {
     /**
      * Function used to mint the remainder of the supply to the treasury.
      * @param receiver Address to mint to.
+     * @param quantity Quantity of tokens to mint.
      */
-    function mintRemainder(address receiver) external;
+    function adminMint(address receiver, uint256 quantity) external;
 
     /**
      * Function used to emit an ERC4906 event to update the metadata for all existing tokens.
