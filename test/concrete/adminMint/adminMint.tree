@@ -2,8 +2,8 @@ AdminMintConcreteTest
 ├── when caller is not admin
 │   └── it should revert
 └── when caller is admin
-    ├── when remainder is greater than max batch size
-    │   ├── it should mint tokens in batches of max size
-    │   └── it should mint remaining tokens in final batch
-    └── when remainder is less than or equal to max batch size
-        └── it should mint all remaining tokens in one batch 
+    ├── when the new amount of minted tokens is greater than the total supply
+    │   └── it should revert
+    └── when the new amount of minted tokens is less than the total supply
+        ├── it should mint the amount of tokens to the receiver
+        └── it should increment the total supply by the amount of tokens minted

@@ -14,6 +14,7 @@ InitializeConcreteTest
                 ├── it should set the name and symbol
                 ├── it should set the owner
                 ├── it should grant the admin the admin role
+                ├── it should set the signer
                 ├── it should set the base token URI
                 ├── it should mint the treasury allocation
                 └── it should initialize the contract
