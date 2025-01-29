@@ -74,4 +74,15 @@ abstract contract BaseTest is Base, Constants, Assertions, Events {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign({ privateKey: users.signer.privateKey, digest: digest });
         return abi.encodePacked(r, s, v);
     }
+
+    /**
+     * Helper function used to generate an array of accounts.
+     */
+    function getAccounts(uint256 amount) internal returns (address[] memory) {
+        address[] memory accounts = new address[](amount);
+        for (uint256 i = 0; i < amount; i++) {
+            accounts[i] = vm.createWallet({ walletLabel: vm.toString(i) }).addr;
+        }
+        return accounts;
+    }
 }
