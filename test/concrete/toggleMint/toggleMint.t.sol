@@ -11,18 +11,17 @@ contract ToggleMintConcreteTest is BaseTest {
     }
 
     modifier whenCallerIsAdmin() {
+        vm.startPrank({ msgSender: users.admin });
         _;
     }
 
     function test_WhenMintIsInactive() external whenCallerIsAdmin {
-        vm.prank({ msgSender: users.admin });
         vm.expectEmit();
         emit MintStateUpdated({ oldMintState: false, newMintState: true });
         adventurer.toggleMint();
     }
 
     function test_WhenMintIsActive() external whenCallerIsAdmin {
-        vm.startPrank({ msgSender: users.admin });
         adventurer.toggleMint();
 
         vm.expectEmit();
