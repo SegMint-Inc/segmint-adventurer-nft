@@ -94,14 +94,11 @@ contract InitializeConcreteTest is BaseTest {
         assertEq(nonInitializedAdventurer.name(), "Abstract Adventurers");
         assertEq(nonInitializedAdventurer.symbol(), "ADVNT");
         assertEq(nonInitializedAdventurer.owner(), users.owner);
-        assertEq(nonInitializedAdventurer.signer(), users.signer.addr);
         assertTrue(nonInitializedAdventurer.hasAllRoles({ user: users.admin, roles: AccessRoles.ADMIN_ROLE }));
-
+        assertEq(nonInitializedAdventurer.signer(), users.signer.addr);
+        assertEq(nonInitializedAdventurer.baseTokenURI(), baseTokenURI);
         uint256 treasuryAllocation = nonInitializedAdventurer.TREASURY_ALLOCATION();
         assertEq(nonInitializedAdventurer.balanceOf({ owner: users.treasury }), treasuryAllocation);
         assertEq(nonInitializedAdventurer.totalSupply(), treasuryAllocation);
-
-        uint256 tokenId = 1;
-        assertEq(nonInitializedAdventurer.tokenURI(tokenId), string.concat(baseTokenURI, vm.toString(tokenId)));
     }
 }

@@ -15,7 +15,7 @@ contract ResetTokenRoyaltyConcreteTest is BaseTest {
         vm.prank({ msgSender: users.admin });
         adventurer.resetTokenRoyalty({ tokenId: 1 });
 
-        (address receiver, uint256 royaltyAmount) = adventurer.royaltyInfo(1, 1 ether);
+        (address receiver, uint256 royaltyAmount) = adventurer.royaltyInfo({ tokenId: 1, salePrice: 1 ether });
         assertEq(receiver, address(0));
         assertEq(royaltyAmount, 0);
     }

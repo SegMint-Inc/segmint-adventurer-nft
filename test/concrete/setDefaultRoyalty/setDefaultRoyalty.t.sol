@@ -17,8 +17,8 @@ contract SetDefaultRoyaltyConcreteTest is BaseTest {
         adventurer.setDefaultRoyalty({ receiver: users.treasury, feeNumerator: NEW_FEE_NUMERATOR });
 
         uint256 purchaseAmount = 1 ether;
-        (address receiver, uint256 royaltyAmount) = adventurer.royaltyInfo(1, purchaseAmount);
-        uint256 expectedRoyaltyAmount = (purchaseAmount * NEW_FEE_NUMERATOR) / 10_000;
+        (address receiver, uint256 royaltyAmount) = adventurer.royaltyInfo({ tokenId: 1, salePrice: purchaseAmount });
+        uint256 expectedRoyaltyAmount = (purchaseAmount * NEW_FEE_NUMERATOR) / MAX_BPS;
 
         assertEq(receiver, users.treasury);
         assertEq(royaltyAmount, expectedRoyaltyAmount);

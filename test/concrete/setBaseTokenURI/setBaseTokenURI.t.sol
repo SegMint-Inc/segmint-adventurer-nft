@@ -15,7 +15,6 @@ contract SetBaseTokenURIConcreteTest is BaseTest {
     function test_WhenCallerIsAdmin() external {
         vm.prank({ msgSender: users.admin });
         adventurer.setBaseTokenURI({ newBaseTokenURI: NEW_BASE_TOKEN_URI });
-
-        assertEq(adventurer.tokenURI({ tokenId: 1 }), string.concat(NEW_BASE_TOKEN_URI, "1"));
+        assertEq(adventurer.baseTokenURI(), NEW_BASE_TOKEN_URI);
     }
 }

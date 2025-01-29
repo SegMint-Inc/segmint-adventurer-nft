@@ -71,14 +71,13 @@ contract MintConcreteTest is BaseTest {
         whenTheAccountHasNotClaimed
     {
         bytes memory signature = getMintSignature({ account: users.alice });
+        uint256 oldTotalSupply = adventurer.totalSupply();
 
         vm.prank({ msgSender: users.alice });
         adventurer.mint(signature);
 
         assertTrue(adventurer.hasClaimed(users.alice));
         assertEq(adventurer.balanceOf({ owner: users.alice }), 1);
-
-        uint256 expectedTotalSupply = adventurer.TREASURY_ALLOCATION() + 1;
-        assertEq(adventurer.totalSupply(), expectedTotalSupply);
+        assertEq(adventurer.totalSupply(), oldTotalSupply + 1);
     }
 }

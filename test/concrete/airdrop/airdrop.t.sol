@@ -6,37 +6,52 @@ import "../../BaseTest.sol";
 contract AirdropConcreteTest is BaseTest {
     address[] internal accounts;
 
-    function test_RevertWhen_CallerIsNotAdmin() external {
+    function test_RevertWhen_TheCallerIsNotTheAdmin() external {
         vm.prank({ msgSender: users.eve });
         vm.expectRevert(Ownable.Unauthorized.selector);
         adventurer.airdrop({ accounts: new address[](1) });
     }
 
-    modifier whenCallerIsAdmin() {
+    modifier whenTheCallerIsTheAdmin() {
         vm.startPrank({ msgSender: users.admin });
         _;
     }
 
-    function test_RevertWhen_AccountsArrayIsZeroLength() external whenCallerIsAdmin {
+    function test_RevertWhen_TheAccountsArrayIsZeroLength() external whenTheCallerIsTheAdmin {
         vm.expectRevert(IAdventurer.ZeroLengthArray.selector);
         adventurer.airdrop({ accounts: new address[](0) });
     }
 
-    modifier whenAccountsArrayIsNonZeroLength() {
+    modifier whenTheAccountsArrayIsNonZeroLength() {
         for (uint256 i = 0; i < 20; i++) {
             accounts.push(vm.createWallet({ walletLabel: vm.toString(i) }).addr);
         }
         _;
     }
 
+    function test_RevertWhen_TheNewAmountOfMintedTokensIsGreaterThanTheTotalSupply()
+        external
+        whenTheCallerIsTheAdmin
+        whenTheAccountsArrayIsNonZeroLength
+    {
+        uint256 remainder = adventurer.MAX_TOKENS() - adventurer.totalSupply();
+        adventurer.adminMint({ receiver: users.treasury, quantity: remainder });
+
+        vm.expectRevert(IAdventurer.MintExceedsTotalSupply.selector);
+        adventurer.airdrop(accounts);
+    }
+
+    modifier whenTheNewAmountOfMintedTokensIsLessThanTheTotalSupply() {
+        _;
+    }
+
     function test_RevertWhen_AnAccountInTheArrayHasAlreadyClaimed()
         external
-        whenCallerIsAdmin
-        whenAccountsArrayIsNonZeroLength
+        whenTheCallerIsTheAdmin
+        whenTheAccountsArrayIsNonZeroLength
     {
         adventurer.toggleMint();
-        vm.stopPrank();
-        /// Stop admin prank.
+        vm.stopPrank(); // Stop admin prank.
 
         bytes memory signature = getMintSignature({ account: users.alice });
         vm.prank({ msgSender: users.alice });
@@ -48,7 +63,11 @@ contract AirdropConcreteTest is BaseTest {
         adventurer.airdrop(accounts);
     }
 
-    function test_WhenNoAccountsInTheArrayHaveClaimed() external whenCallerIsAdmin whenAccountsArrayIsNonZeroLength {
+    function test_WhenNoAccountsInTheArrayHaveClaimed()
+        external
+        whenTheCallerIsTheAdmin
+        whenTheAccountsArrayIsNonZeroLength
+    {
         adventurer.airdrop(accounts);
 
         for (uint256 i = 0; i < accounts.length; i++) {
