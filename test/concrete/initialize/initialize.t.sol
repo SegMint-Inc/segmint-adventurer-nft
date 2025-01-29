@@ -100,5 +100,8 @@ contract InitializeConcreteTest is BaseTest {
         uint256 treasuryAllocation = nonInitializedAdventurer.TREASURY_ALLOCATION();
         assertEq(nonInitializedAdventurer.balanceOf({ owner: users.treasury }), treasuryAllocation);
         assertEq(nonInitializedAdventurer.totalSupply(), treasuryAllocation);
+        assertTrue(nonInitializedAdventurer.supportsInterface({ interfaceId: 0x49064906 }));
+        assertTrue(nonInitializedAdventurer.supportsInterface({ interfaceId: 0x2a55205a }));
+        assertTrue(nonInitializedAdventurer.supportsInterface({ interfaceId: 0x80ac58cd }));
     }
 }
