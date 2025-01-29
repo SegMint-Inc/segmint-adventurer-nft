@@ -125,13 +125,6 @@ contract Adventurer is
     /**
      * @inheritdoc IAdventurer
      */
-    function updateMetadata() external onlyRoles(AccessRoles.ADMIN_ROLE) {
-        emit BatchMetadataUpdate({ _fromTokenId: _startTokenId(), _toTokenId: _totalMinted() });
-    }
-
-    /**
-     * @inheritdoc IAdventurer
-     */
     function setSigner(address newSigner) external onlyRoles(AccessRoles.ADMIN_ROLE) {
         if (newSigner == address(0)) revert ZeroAddress();
         address oldSigner = signer;
@@ -155,6 +148,13 @@ contract Adventurer is
         bool oldFlag = mintable;
         mintable = !oldFlag;
         emit MintStateUpdated({ oldMintState: oldFlag, newMintState: !oldFlag });
+    }
+
+    /**
+     * @inheritdoc IAdventurer
+     */
+    function updateMetadata() external onlyRoles(AccessRoles.ADMIN_ROLE) {
+        emit BatchMetadataUpdate({ _fromTokenId: _startTokenId(), _toTokenId: _totalMinted() });
     }
 
     /**
@@ -185,8 +185,8 @@ contract Adventurer is
 
     /**
      * Function used to set the default royalty information.
-     * @param receiver Address to receive royalties
-     * @param feeNumerator Fee numerator out of 10000
+     * @param receiver Address to receive royalties.
+     * @param feeNumerator Fee numerator out of 10,000.
      */
     function setDefaultRoyalty(address receiver, uint96 feeNumerator) external onlyRoles(AccessRoles.ADMIN_ROLE) {
         _setDefaultRoyalty(receiver, feeNumerator);
@@ -201,9 +201,9 @@ contract Adventurer is
 
     /**
      * Function used to set token specific royalty information.
-     * @param tokenId Token ID to set royalty for
-     * @param receiver Address to receive royalties
-     * @param feeNumerator Fee numerator out of 10000
+     * @param tokenId Token ID to set royalty for.
+     * @param receiver Address to receive royalties.
+     * @param feeNumerator Fee numerator out of 10,000.
      */
     function setTokenRoyalty(
         uint256 tokenId,
@@ -218,7 +218,7 @@ contract Adventurer is
 
     /**
      * Function used to reset token specific royalty information.
-     * @param tokenId Token ID to reset royalty for
+     * @param tokenId Token ID to reset royalty for.
      */
     function resetTokenRoyalty(uint256 tokenId) external onlyRoles(AccessRoles.ADMIN_ROLE) {
         _resetTokenRoyalty(tokenId);
