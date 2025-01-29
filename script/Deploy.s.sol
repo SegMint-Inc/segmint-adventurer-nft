@@ -17,12 +17,15 @@ contract DeployScript is Base {
     uint256 public adminPrivateKey;
 
     function setUp() public {
+        string memory chainName;
         if (block.chainid == ABSTRACT_CHAIN_ID) {
             deployerPrivateKey = vm.envUint({ name: "MAINNET_DEPLOYER_PRIVATE_KEY" });
             adminPrivateKey = vm.envUint({ name: "MAINNET_ADMIN_PRIVATE_KEY" });
+            chainName = ".mainnet";
         } else {
             deployerPrivateKey = vm.envUint({ name: "TESTNET_DEPLOYER_PRIVATE_KEY" });
             adminPrivateKey = vm.envUint({ name: "TESTNET_ADMIN_PRIVATE_KEY" });
+            chainName = ".testnet";
         }
 
         deployer = vm.rememberKey({ privateKey: deployerPrivateKey });
@@ -34,9 +37,9 @@ contract DeployScript is Base {
         path = string.concat(basePath, vm.envString("CONSTANTS_FILENAME"));
         string memory jsonConstants = vm.readFile(path);
 
-        signer = abi.decode(vm.parseJson(jsonConstants, ".signer"), (address));
-        treasury = abi.decode(vm.parseJson(jsonConstants, ".treasury"), (address));
-        baseTokenURI = abi.decode(vm.parseJson(jsonConstants, ".baseTokenURI"), (string));
+        signer = abi.decode(vm.parseJson(jsonConstants, string.concat(chainName, ".signer")), (address));
+        treasury = abi.decode(vm.parseJson(jsonConstants, string.concat(chainName, ".treasury")), (address));
+        baseTokenURI = abi.decode(vm.parseJson(jsonConstants, string.concat(chainName, ".baseTokenURI")), (string));
     }
 
     function run() public {
@@ -53,5 +56,8 @@ contract DeployScript is Base {
             path: path
         });
         vm.writeJson(vm.serializeAddress("", "adventurerProxy", address(adventurer)), path);
+        vm.writeJson(vm.serializeAddress("", "signer", signer), path);
+        vm.writeJson(vm.serializeAddress("", "treasury", treasury), path);
+        vm.writeJson(vm.serializeString("", "baseTokenURI", baseTokenURI), path);
     }
 }
