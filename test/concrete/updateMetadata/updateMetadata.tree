@@ -1,5 +1,3 @@
 UpdateMetadataConcreteTest
-├── when caller is not admin
-│   └── it should revert
-└── when caller is admin
+├── when update metadata is called
     └── it should emit BatchMetadataUpdate event 

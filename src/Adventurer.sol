@@ -153,7 +153,7 @@ contract Adventurer is
     /**
      * @inheritdoc IAdventurer
      */
-    function updateMetadata() external onlyRoles(AccessRoles.ADMIN_ROLE) {
+    function updateMetadata() external {
         emit BatchMetadataUpdate({ _fromTokenId: _startTokenId(), _toTokenId: _totalMinted() });
     }
 
