@@ -1,0 +1,17 @@
+AirdropConcreteTest
+├── when the caller is not the admin
+│   └── it should revert
+└── when the caller is the admin
+    ├── when the accounts array is zero length
+    │   └── it should revert
+    └── when the accounts array is non zero length
+        ├── when the new amount of minted tokens is greater than the total supply
+        │   └── it should revert
+        └── when the new amount of minted tokens is less than the total supply
+            ├── when an account in the array has already claimed
+            │   └── it should revert
+            └── when no accounts in the array have claimed
+                ├── it should set airdropped to true
+                ├── it should set aux value to 1 for each account
+                ├── it should mint one token to each account
+                └── it should increment total supply by the airdrop allocation

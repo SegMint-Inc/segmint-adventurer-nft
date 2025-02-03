@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.27;
 
+/**
+ * @title AccessRoles
+ * @notice This library contains all the valid roles within the protocol. Roles have been defined to mimic
+ * {Solady.OwnableRoles} roles.
+ */
 library AccessRoles {
-    /// `keccak256("ADMIN_ROLE")`
-    uint256 public constant ADMIN_ROLE = 0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
+    uint256 public constant ADMIN_ROLE = 1 << 0;
 }

@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.27;
 
-import { IAccessRegistry } from "./IAccessRegistry.sol";
-import { Characters } from "../types/DataTypes.sol";
-
+/**
+ * @title IAdventurer
+ * @notice Interface for Adventurer.
+ */
 interface IAdventurer {
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           ERRORS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /**
      * Thrown when the zero address is provided as input.
      */
-    error ZeroAddressInvalid();
+    error ZeroAddress();
 
     /**
      * Thrown when the recovered signer doesn't match the set signer.
@@ -16,44 +21,9 @@ interface IAdventurer {
     error SignerMismatch();
 
     /**
-     * Thrown when the current claim state doesn't match the intended claim state.
+     * Thrown when an address has already claimed an adventurer.
      */
-    error InvalidClaimState();
-
-    /**
-     * Thrown when a profile identifier has already claimed an adventurer.
-     */
-    error ProfileHasClaimed();
-
-    /**
-     * Thrown when an undefined character type is provided.
-     */
-    error UndefinedCharacterType();
-
-    /**
-     * Thrown when a character supply is exhuasted.
-     */
-    error CharacterSupplyExhausted();
-
-    /**
-     * Thrown when an adventurer is already transformed.
-     */
-    error AlreadyTransformed();
-
-    /**
-     * Thrown when the caller is not the owner of the token.
-     */
-    error CallerNotOwner();
-
-    /**
-     * Thrown when the token identifier does not exist.
-     */
-    error NonExistentTokenId();
-
-    /**
-     * Thrown when two input arrays differ in length.
-     */
-    error ArrayLengthMismatch();
+    error AccountHasClaimed();
 
     /**
      * Thrown when an input array has zero length.
@@ -61,19 +31,28 @@ interface IAdventurer {
     error ZeroLengthArray();
 
     /**
-     * Emitted when an adventurer is claimed.
-     * @param account Account that claimed the adventurer.
-     * @param profileId SegMint profile identifier.
-     * @param character Type of adventurer that was claimed.
+     * Thrown when the amount of tokens to airdrop does not match the allocation amount.
      */
-    event AdventurerClaimed(address indexed account, bytes32 indexed profileId, Characters character);
+    error InvalidAirdropAmount();
 
     /**
-     * Emitted when an adventurer is transformed.
-     * @param account Account that transformed the adventurer.
-     * @param tokenId Unique token identifier that was transformed.
+     * Thrown when the airdrop is already complete.
      */
-    event AdventurerTransformed(address indexed account, uint256 tokenId);
+    error AirdropComplete();
+
+    /**
+     * Thrown when the mint is not active.
+     */
+    error MintInactive();
+
+    /**
+     * Thrown when the mint exceeds the total supply.
+     */
+    error MintExceedsTotalSupply();
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
      * Emitted when the signer address is updated.
@@ -83,13 +62,6 @@ interface IAdventurer {
     event SignerUpdated(address indexed oldSigner, address indexed newSigner);
 
     /**
-     * Emitted when the Access Registry is updated.
-     * @param oldAccessRegistry Old Access Registry address.
-     * @param newAccessRegistry New Access Registry address.
-     */
-    event AccessRegistryUpdated(IAccessRegistry indexed oldAccessRegistry, IAccessRegistry indexed newAccessRegistry);
-
-    /**
      * Emitted when the base token URI is updated.
      * @param oldBaseTokenURI Old base token URI value.
      * @param newBaseTokenURI New base token URI value.
@@ -97,11 +69,57 @@ interface IAdventurer {
     event BaseTokenURIUpdated(string oldBaseTokenURI, string newBaseTokenURI);
 
     /**
-     * Emitted when the supply for a character is updated.
-     * @param character Adventurer character type.
-     * @param amount Amount added to the supply.
+     * Emitted when the mint state is updated.
+     * @param oldMintState Old mint state value.
+     * @param newMintState New mint state value.
      */
-    event CharacterSupplyUpdated(Characters indexed character, uint256 amount);
+    event MintStateUpdated(bool oldMintState, bool newMintState);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         FUNCTIONS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /**
+     * Function used to initialize storage of the proxy contract.
+     * @param _owner Owner address.
+     * @param _admin Admin address.
+     * @param _signer Signer address.
+     * @param _treasury Treasury address.
+     * @param _baseTokenURI Starting base token URI.
+     */
+    function initialize(
+        address _owner,
+        address _admin,
+        address _signer,
+        address _treasury,
+        string calldata _baseTokenURI
+    )
+        external;
+
+    /**
+     * Function used to mint during the mint phase.
+     * @param signature Signed message digest.
+     */
+    function mint(bytes calldata signature) external;
+
+    /**
+     * Function used to airdrop adventurers to a list of accounts, this function is only callable once
+     * and will be called after deployment prior to the mint phase.
+     * @param accounts List of accounts to airdrop to.
+     */
+    function airdrop(address[] calldata accounts) external;
+
+    /**
+     * Function used to mint the remainder of the supply to the treasury.
+     * @param receiver Address to mint to.
+     * @param quantity Quantity of tokens to mint.
+     */
+    function adminMint(address receiver, uint256 quantity) external;
+
+    /**
+     * Function used to emit an ERC4906 event to update the metadata for all existing tokens.
+     */
+    function updateMetadata() external;
 
     /**
      * Function used to update the signer address.
@@ -110,13 +128,19 @@ interface IAdventurer {
     function setSigner(address newSigner) external;
 
     /**
-     * Function used to update the Access Registry address.
-     * @param newAccessRegistry New Access Registry address.
+     * Function used to set a new base token URI.
+     * @param newBaseTokenURI New base token URI value.
      */
-    function setAccessRegistry(IAccessRegistry newAccessRegistry) external;
+    function setBaseTokenURI(string calldata newBaseTokenURI) external;
 
-    enum ClaimState {
-        CLOSED,
-        ACTIVE
-    }
+    /**
+     * Function used to toggle the mint state.
+     */
+    function toggleMint() external;
+
+    /**
+     * Function used to view if an account has claimed an adventurer.
+     * @param account Account to check.
+     */
+    function hasClaimed(address account) external view returns (bool);
 }

@@ -1,0 +1,9 @@
+SetSignerConcreteTest
+├── when caller is not admin
+│   └── it should revert
+└── when caller is admin
+    ├── when new signer is zero address
+    │   └── it should revert
+    └── when new signer is not zero address
+        ├── it should update the signer
+        └── it should emit SignerUpdated event 
