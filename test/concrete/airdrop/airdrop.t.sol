@@ -68,6 +68,14 @@ contract AirdropConcreteTest is BaseTest {
         whenTheCallerIsTheAdmin
         whenTheAccountsArrayIsNonZeroLength
     {
+        uint256 nextTokenId = adventurer.totalSupply() + 1;
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            vm.expectEmit();
+            emit Airdropped({ account: accounts[i], tokenId: nextTokenId });
+            nextTokenId++;
+        }
+
         adventurer.airdrop(accounts);
 
         for (uint256 i = 0; i < accounts.length; i++) {

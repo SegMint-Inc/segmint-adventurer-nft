@@ -39,8 +39,8 @@ contract EndToEndTest is BaseTest {
         adventurer.toggleMint();
         assertTrue(adventurer.mintable());
 
-        // Mint 6000 tokens as regular users.
-        uint256 mintAmount = 6000;
+        // Mint 3200 tokens as regular users.
+        uint256 mintAmount = 3200;
         address[] memory mintUsers = getAccounts({ amount: mintAmount });
         bytes memory signature;
 

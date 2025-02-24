@@ -1,6 +1,7 @@
 # Compiler files
 cache/
 out/
+zkout/
 
 # Ignores development broadcast logs
 !/broadcast
@@ -15,3 +16,6 @@ docs/
 
 # Coverage
 lcov.info
+
+# ZK coverage
+foundryup-zksync

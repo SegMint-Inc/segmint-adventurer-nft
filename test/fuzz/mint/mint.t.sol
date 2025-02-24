@@ -26,8 +26,10 @@ contract MintFuzzTest is BaseTest {
         assumeNotForgeAddress({ addr: account });
         assumeNotPrecompile({ addr: account });
 
+        uint256 amountRemaining = adventurer.MAX_TOKENS() - adventurer.totalSupply();
+
         vm.prank({ msgSender: users.admin });
-        adventurer.adminMint({ receiver: users.treasury, quantity: 6450 });
+        adventurer.adminMint({ receiver: users.treasury, quantity: amountRemaining });
 
         bytes memory signature = getMintSignature(account);
 
@@ -90,12 +92,16 @@ contract MintFuzzTest is BaseTest {
 
         bytes memory signature = getMintSignature(account);
         uint256 oldTotalSupply = adventurer.totalSupply();
+        uint256 nextTokenId = oldTotalSupply + 1;
 
         vm.prank({ msgSender: account });
+        vm.expectEmit();
+        emit AdventurerClaimed({ account: account, tokenId: nextTokenId });
         adventurer.mint(signature);
 
         assertTrue(adventurer.hasClaimed(account));
         assertEq(adventurer.balanceOf({ owner: account }), 1);
-        assertEq(adventurer.totalSupply(), oldTotalSupply + 1);
+        assertEq(adventurer.ownerOf({ tokenId: nextTokenId }), account);
+        assertEq(adventurer.totalSupply(), nextTokenId);
     }
 }

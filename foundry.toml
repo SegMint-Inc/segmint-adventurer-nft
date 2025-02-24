@@ -10,6 +10,7 @@ is_system = false # Note: NonceHolder and the ContractDeployer system contracts 
 mode = "3"
 show_progress = true
 optimizer_runs = 1_000_000
+optimizer = true
 
 [fmt]
 bracket_spacing = true

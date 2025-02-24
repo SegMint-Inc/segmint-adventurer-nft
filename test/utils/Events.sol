@@ -8,6 +8,8 @@ abstract contract Events {
     event SignerUpdated(address indexed oldSigner, address indexed newSigner);
     event BaseTokenURIUpdated(string oldBaseTokenURI, string newBaseTokenURI);
     event MintStateUpdated(bool oldMintState, bool newMintState);
+    event AdventurerClaimed(address indexed account, uint256 tokenId);
+    event Airdropped(address indexed account, uint256 tokenId);
 
     /// { IERC4906 } Events.
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
