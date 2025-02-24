@@ -75,6 +75,20 @@ interface IAdventurer {
      */
     event MintStateUpdated(bool oldMintState, bool newMintState);
 
+    /**
+     * Emitted when an adventurer is claimed.
+     * @param account Account that claimed the adventurer.
+     * @param tokenId Token ID of the adventurer.
+     */
+    event AdventurerClaimed(address indexed account, uint256 tokenId);
+
+    /**
+     * Emitted when an adventurer is airdropped.
+     * @param account Account that was airdropped the adventurer.
+     * @param tokenId Token ID of the adventurer.
+     */
+    event Airdropped(address indexed account, uint256 tokenId);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         FUNCTIONS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

@@ -91,8 +91,8 @@ contract InitializeConcreteTest is BaseTest {
             _baseTokenURI: baseTokenURI
         });
 
-        assertEq(nonInitializedAdventurer.name(), "Abstract Adventurers");
-        assertEq(nonInitializedAdventurer.symbol(), "ADVNT");
+        assertEq(nonInitializedAdventurer.name(), "SegMint Adventurers");
+        assertEq(nonInitializedAdventurer.symbol(), "SGMTADVNT");
         assertEq(nonInitializedAdventurer.owner(), users.owner);
         assertTrue(nonInitializedAdventurer.hasAllRoles({ user: users.admin, roles: AccessRoles.ADMIN_ROLE }));
         assertEq(nonInitializedAdventurer.signer(), users.signer.addr);

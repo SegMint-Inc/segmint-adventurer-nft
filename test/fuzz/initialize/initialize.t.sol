@@ -102,8 +102,8 @@ contract InitializeFuzzTest is BaseTest {
             _baseTokenURI: newBaseTokenURI
         });
 
-        assertEq(nonInitializedAdventurer.name(), "Abstract Adventurers");
-        assertEq(nonInitializedAdventurer.symbol(), "ADVNT");
+        assertEq(nonInitializedAdventurer.name(), "SegMint Adventurers");
+        assertEq(nonInitializedAdventurer.symbol(), "SGMTADVNT");
         assertEq(nonInitializedAdventurer.owner(), newOwner);
         assertTrue(nonInitializedAdventurer.hasAllRoles({ user: newAdmin, roles: AccessRoles.ADMIN_ROLE }));
         assertEq(nonInitializedAdventurer.signer(), newSigner);

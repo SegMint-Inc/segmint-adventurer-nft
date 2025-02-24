@@ -29,8 +29,8 @@ contract Adventurer is
 {
     using ECDSA for bytes32;
 
-    uint256 public constant MAX_TOKENS = 7000;
-    uint256 public constant TREASURY_ALLOCATION = 550;
+    uint256 public constant MAX_TOKENS = 4000;
+    uint256 public constant TREASURY_ALLOCATION = 555;
 
     /// @dev Base token URI for the collection.
     string public baseTokenURI;
@@ -65,19 +65,21 @@ contract Adventurer is
         /// @dev No zero check for `_treasury` as `_mint` will revert if the `to` address is zero.
         if (_owner == address(0) || _admin == address(0) || _signer == address(0)) revert ZeroAddress();
 
-        __ERC721A_init({ name_: "Abstract Adventurers", symbol_: "ADVNT" });
+        __ERC721A_init({ name_: "SegMint Adventurers", symbol_: "SGMTADVNT" });
         _initializeOwner({ newOwner: _owner });
         _grantRoles({ user: _admin, roles: AccessRoles.ADMIN_ROLE });
 
         signer = _signer;
         baseTokenURI = _baseTokenURI;
 
-        uint256 batchSize = 50;
-        uint256 batchCount = TREASURY_ALLOCATION / batchSize;
-
         /// Mint treasury allocation in batches of 50 tokens to prevent potential gas issues on later transfers.
-        for (uint256 i = 0; i < batchCount; i++) {
-            _mint({ to: _treasury, quantity: batchSize });
+        uint256 tokensLeftToMint = TREASURY_ALLOCATION;
+        uint256 batchSize = 50;
+
+        while (tokensLeftToMint != 0) {
+            uint256 mintAmount = tokensLeftToMint > batchSize ? batchSize : tokensLeftToMint;
+            _mint({ to: _treasury, quantity: mintAmount });
+            tokensLeftToMint -= mintAmount;
         }
     }
 
@@ -93,7 +95,10 @@ contract Adventurer is
         bytes32 digest = keccak256(abi.encodePacked(msg.sender)).toEthSignedMessageHash();
         if (signer != digest.recoverCalldata(signature)) revert SignerMismatch();
 
+        uint256 tokenId = _nextTokenId();
         _mint({ to: msg.sender, quantity: 1 });
+
+        emit AdventurerClaimed({ account: msg.sender, tokenId: tokenId });
     }
 
     /**
@@ -110,7 +115,10 @@ contract Adventurer is
             if (_getAux({ owner: account }) == 1) revert AccountHasClaimed();
             _setAux({ owner: account, aux: 1 });
 
+            uint256 tokenId = _nextTokenId();
             _mint({ to: account, quantity: 1 });
+
+            emit Airdropped(account, tokenId);
         }
     }
 
